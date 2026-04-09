@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { api, HealthResponse } from "@/lib/api";
 import { CheckCircle, XCircle, RefreshCw, Play, Wrench, AlertTriangle } from "lucide-react";
+import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 interface ScriptStatus {
   scripts: Record<string, "present" | "missing">;

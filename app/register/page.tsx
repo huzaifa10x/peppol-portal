@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 export default function RegisterPage() {
   const router = useRouter();

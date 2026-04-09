@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Send, CheckCircle, XCircle, Search, Clock, Copy } from "lucide-react";
 import { tenantApi, DBDocument } from "@/lib/api";
+import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 interface LineItem {
   description: string; quantity: number; unit_code: string;

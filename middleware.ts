@@ -1,6 +1,5 @@
 import { withAuth } from "next-auth/middleware";
 
-// Exporting withAuth explicitly ensures Next.js sees a function
 export default withAuth({
   pages: {
     signIn: "/login",

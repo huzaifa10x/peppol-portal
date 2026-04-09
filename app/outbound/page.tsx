@@ -3,8 +3,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { tenantApi, DBDocument } from "@/lib/api";
 import { Plus, RefreshCw, Send, XCircle, Clock, CheckCircle, RotateCcw } from "lucide-react";
+import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-AE", { minimumFractionDigits: 2 }).format(n);
