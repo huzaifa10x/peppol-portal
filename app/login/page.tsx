@@ -72,11 +72,11 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          {/* <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-500 font-medium mb-1">Demo credentials</p>
             <p className="text-xs font-mono text-gray-600">admin@kasaadvisory.com</p>
             <p className="text-xs font-mono text-gray-600">Admin@2026</p>
-          </div>
+          </div> */}
         </div>
         <div className="text-center mt-4 space-y-2">
           <p className="text-xs text-gray-400">
