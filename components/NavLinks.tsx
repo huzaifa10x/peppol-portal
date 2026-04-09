@@ -2,19 +2,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FileText, Send, CheckSquare, Shield,
-  Activity, LayoutDashboard, Building2, GitBranch, Receipt, FilePlus
+  LayoutDashboard, GitBranch, FileText, Send,
+  CheckSquare, Shield, Building2, Activity,
+  Receipt, FilePlus, ArrowUpRight, Settings
 } from "lucide-react";
 
 const nav = [
-  { href: "/",            label: "Dashboard",   icon: LayoutDashboard },
-  { href: "/processing",  label: "Processing",  icon: GitBranch },
-  { href: "/inbox",       label: "Inbox",       icon: FileText },
-  { href: "/send",        label: "Send",        icon: Send },
-  { href: "/validate",    label: "Validate",    icon: CheckSquare },
-  { href: "/tdds",        label: "TDDs / MLS",  icon: Shield },
-  { href: "/master-data", label: "Master Data", icon: Building2 },
-  { href: "/system",      label: "System",      icon: Activity },
+  { href: "/",               label: "Dashboard",       icon: LayoutDashboard },
+  { href: "/processing",     label: "Processing",      icon: GitBranch },
+  { href: "/inbox",          label: "Inbox",           icon: FileText },
+  { href: "/invoices",       label: "All Invoices",    icon: Receipt },
+  { href: "/outbound",       label: "Outbound",        icon: ArrowUpRight },
+  { href: "/create-invoice", label: "Create Invoice",  icon: FilePlus },
+  { href: "/send",           label: "Send (Template)", icon: Send },
+  { href: "/validate",       label: "Validate",        icon: CheckSquare },
+  { href: "/tdds",           label: "TDDs / MLS",      icon: Shield },
+  { href: "/master-data",    label: "Master Data",     icon: Building2 },
+  { href: "/admin",          label: "Admin",           icon: Settings },
+  { href: "/system",         label: "System",          icon: Activity },
 ];
 
 export default function NavLinks() {
@@ -30,7 +35,7 @@ export default function NavLinks() {
                 ? "bg-blue-50 text-blue-700 font-medium"
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`}>
-            <Icon size={16} className={active ? "text-blue-600" : "text-gray-400"} />
+            <Icon size={15} className={active ? "text-blue-600" : "text-gray-400"} />
             {label}
           </Link>
         );

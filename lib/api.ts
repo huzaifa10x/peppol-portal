@@ -177,3 +177,85 @@ export const dbApi = {
   parties: () => get<{ total: number; parties: Party[] }>("/parties"),
   createParty: (data: Partial<Party>) => post<{ id: string; created: boolean }>("/parties", data),
 };
+
+// ── Tenant-scoped API ─────────────────────────────────────────────────────────
+
+export interface TenantStats {
+  total: number;
+  inbound: number;
+  outbound: number;
+  billing: number;
+  selfbilling: number;
+  invoices: number;
+  credit_notes: number;
+  tdds_generated: number;
+  tdds_sent: number;
+  validated: number;
+  mls_acknowledged: number;
+  outbound_sent: number;
+  outbound_failed: number;
+  outbound_draft: number;
+  total_amount: number;
+  outbound_amount: number;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  peppol_id: string;
+  plan: string;
+  is_active: boolean;
+  created_at: string;
+  notification_email: string | null;
+  billing_participant_id: string;
+  selfbilling_participant_id: string;
+  user_count: number;
+  document_count: number;
+}
+
+export interface TenantUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
+
+export interface ReceiverLookup {
+  found: boolean;
+  peppol_id: string;
+  service_count?: number;
+  can_receive_billing?: boolean;
+  can_receive_selfbilling?: boolean;
+  http_error?: number;
+  error?: string;
+}
+
+export const tenantApi = {
+  stats:       (tenantId?: string) =>
+    get<TenantStats>(`/tenant/stats${tenantId ? `?tenant_id=${tenantId}` : ""}`),
+  documents:   (params: Record<string, string | number> = {}) => {
+    const q = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).map(([k,v]) => [k, String(v)]))
+    );
+    return get<DBDocumentsResponse>(`/tenant/documents?${q}`);
+  },
+  listTenants:  () => get<{ tenants: Tenant[] }>("/tenant/list"),
+  updateTenant: (id: string, data: Partial<Tenant>) =>
+    post<{ updated: boolean }>(`/tenant/${id}`, data),
+  addUser:      (tenantId: string, data: { email: string; name: string; password: string; role: string }) =>
+    post<{ user_id: string; created: boolean }>(`/tenant/${tenantId}/add-user`, data),
+  users:        (tenantId: string) =>
+    get<{ users: TenantUser[] }>(`/tenant/${tenantId}/users`),
+  lookupReceiver: (peppolId: string) =>
+    get<ReceiverLookup>(`/lookup/receiver/${encodeURIComponent(peppolId)}`),
+  resendInvoice:  (docId: string) =>
+    post<{ sent: boolean; status: string }>(`/invoices/${docId}/resend`),
+  templates:      () => get<{ templates: DBDocument[] }>("/invoice-templates"),
+  markAllRead:    () => post("/notifications/mark-all-read"),
+  clearRead:      () => fetch(`${BASE}/notifications/clear`, { method: "DELETE" }).then(r => r.json()),
+  syncStatuses:   () => post("/sync/update-statuses"),
+};
