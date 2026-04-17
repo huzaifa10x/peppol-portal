@@ -1,30 +1,37 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, GitBranch, FileText, Send,
   CheckSquare, Shield, Building2, Activity,
-  Receipt, FilePlus, ArrowUpRight, Settings, SlidersHorizontal
+  Receipt, FilePlus, ArrowUpRight, Settings,
+  SlidersHorizontal
 } from "lucide-react";
 
-const nav = [
-  { href: "/",               label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/processing",     label: "Processing",      icon: GitBranch },
-  { href: "/inbox",          label: "Inbox",           icon: FileText },
-  { href: "/invoices",       label: "All Invoices",    icon: Receipt },
-  { href: "/outbound",       label: "Outbound",        icon: ArrowUpRight },
-  { href: "/create-invoice", label: "Create Invoice",  icon: FilePlus },
-  { href: "/send",           label: "Send (Template)", icon: Send },
-  { href: "/validate",       label: "Validate",        icon: CheckSquare },
-  { href: "/tdds",           label: "TDDs / MLS",      icon: Shield },
-  { href: "/master-data",    label: "Master Data",     icon: Building2 },
-  { href: "/admin",          label: "Admin",           icon: Settings },
-  { href: "/settings",       label: "Settings",        icon: SlidersHorizontal },
-  { href: "/system",         label: "System",          icon: Activity },
+const allNav = [
+  { href: "/",               label: "Dashboard",       icon: LayoutDashboard, roles: ["super_admin","admin","sender","viewer"] },
+  { href: "/processing",     label: "Processing",      icon: GitBranch,        roles: ["super_admin"] },
+  { href: "/inbox",          label: "Inbox",           icon: FileText,         roles: ["super_admin","admin","sender","viewer"] },
+  { href: "/invoices",       label: "All Invoices",    icon: Receipt,          roles: ["super_admin","admin","sender","viewer"] },
+  { href: "/outbound",       label: "Outbound",        icon: ArrowUpRight,     roles: ["super_admin","admin","sender"] },
+  { href: "/create-invoice", label: "Create Invoice",  icon: FilePlus,         roles: ["super_admin","admin","sender"] },
+  { href: "/send",           label: "Send (Template)", icon: Send,             roles: ["super_admin","admin","sender"] },
+  { href: "/validate",       label: "Validate",        icon: CheckSquare,      roles: ["super_admin","admin","sender"] },
+  { href: "/tdds",           label: "TDDs / MLS",      icon: Shield,           roles: ["super_admin","admin"] },
+  { href: "/master-data",    label: "Master Data",     icon: Building2,        roles: ["super_admin"] },
+  { href: "/admin",          label: "Admin",           icon: Settings,         roles: ["super_admin"] },
+  { href: "/settings",       label: "Settings",        icon: SlidersHorizontal, roles: ["super_admin","admin","sender","viewer"] },
+  { href: "/system",         label: "System",          icon: Activity,         roles: ["super_admin"] },
 ];
 
 export default function NavLinks() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role ?? "viewer";
+
+  const nav = allNav.filter(item => item.roles.includes(role));
+
   return (
     <>
       {nav.map(({ href, label, icon: Icon }) => {

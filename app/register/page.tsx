@@ -7,7 +7,6 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 interface RegFieldProps {
   label: string;
-  field: string;
   type?: string;
   placeholder?: string;
   required?: boolean;
@@ -99,16 +98,16 @@ export default function RegisterPage() {
             <div className="pb-2 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Company</p>
             </div>
-            <Field label="Company Name" field="company_name" required placeholder="ACME Trading LLC" />
-            <Field label="Slug (URL identifier)" field="slug" required placeholder="acme-trading" />
-            <Field label="Peppol ID" field="peppol_id" placeholder="0235:100000000000003" />
+            <RegField label="Company Name" required placeholder="ACME Trading LLC"  value={form.company_name} onChange={v => set("company_name", v)} />
+            <RegField label="Slug (URL identifier)" required placeholder="acme-trading"  value={form.slug} onChange={v => set("slug", v)} />
+            <RegField label="Peppol ID" placeholder="0235:100000000000003"  value={form.peppol_id} onChange={v => set("peppol_id", v)} />
 
             <div className="pb-2 pt-2 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin User</p>
             </div>
-            <Field label="Full Name" field="name" required placeholder="Ahmed Al Mansoori" />
-            <Field label="Email" field="email" type="email" required placeholder="admin@company.ae" />
-            <Field label="Password" field="password" type="password" required placeholder="••••••••" />
+            <RegField label="Full Name" required placeholder="Ahmed Al Mansoori"  value={form.name} onChange={v => set("name", v)} />
+            <RegField label="Email" type="email" required placeholder="admin@company.ae"  value={form.email} onChange={v => set("email", v)} />
+            <RegField label="Password" type="password" required placeholder="••••••••"  value={form.password} onChange={v => set("password", v)} />
 
             {error && (
               <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">

@@ -7,8 +7,8 @@ import Link from "next/link";
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
-  const tenantId = (session?.user as any)?.tenant_id ?? "a0000000-0000-0000-0000-000000000001";
+  const { data: session, status } = useSession();
+  const tenantId = (session?.user as any)?.tenant_id ?? "";
   const [email, setEmail]     = useState("");
   const [saved, setSaved]     = useState(false);
   const [testing, setTesting] = useState(false);
@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!tenantId) return;
     fetch(`${BASE}/email/preferences/${tenantId}`)
       .then(r => r.json())
       .then(d => { setEmail(d.notification_email ?? ""); setLoading(false); })

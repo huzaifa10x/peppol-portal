@@ -1,5 +1,6 @@
 import { tenantApi, api } from "@/lib/api";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { FileText, TrendingUp, Shield, CheckCircle, XCircle, Send, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
@@ -10,7 +11,7 @@ function fmt(n: number) {
 }
 
 export default async function Dashboard() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   const tenantId = (session?.user as any)?.tenant_id;
 
   const [stats, health, smp] = await Promise.all([
