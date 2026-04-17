@@ -3,6 +3,27 @@ import { useEffect, useState } from "react";
 import { dbApi, Party } from "@/lib/api";
 import { Plus, Building2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 
+interface FieldProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}
+
+function Field({ label, value, onChange, placeholder }: FieldProps) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    </div>
+  );
+}
+
 export default function MasterDataPage() {
   const [parties, setParties]   = useState<Party[]>([]);
   const [total, setTotal]       = useState(0);
@@ -35,18 +56,6 @@ export default function MasterDataPage() {
     setSaving(false);
   };
 
-  const Field = ({ label, field, placeholder }: { label: string; field: keyof typeof form; placeholder?: string }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input
-        value={form[field]}
-        onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-      />
-    </div>
-  );
-
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -75,14 +84,14 @@ export default function MasterDataPage() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div className="lg:col-span-2">
-              <Field label="Organisation Name *" field="name" placeholder="ACME Trading LLC" />
+              <Field label="Organisation Name *" value={form.name} onChange={v => setForm(f => ({...f, name: v}))} placeholder="ACME Trading LLC" />
             </div>
-            <Field label="Tax ID (TIN)" field="tax_id" placeholder="100000000000003" />
-            <Field label="VAT Number" field="vat_number" placeholder="100000000000003" />
-            <Field label="Trade Registry Code" field="trade_registry_code" placeholder="TR-12345" />
-            <Field label="City" field="city" placeholder="Dubai" />
-            <Field label="IBAN" field="iban" placeholder="AE070331234567890123456" />
-            <Field label="Peppol ID" field="peppol_id" placeholder="0235:100000000000003" />
+            <Field label="Tax ID (TIN)" value={form.tax_id} onChange={v => setForm(f => ({...f, tax_id: v}))} placeholder="100000000000003" />
+            <Field label="VAT Number" value={form.vat_number} onChange={v => setForm(f => ({...f, vat_number: v}))} placeholder="100000000000003" />
+            <Field label="Trade Registry Code" value={form.trade_registry_code} onChange={v => setForm(f => ({...f, trade_registry_code: v}))} placeholder="TR-12345" />
+            <Field label="City" value={form.city} onChange={v => setForm(f => ({...f, city: v}))} placeholder="Dubai" />
+            <Field label="IBAN" value={form.iban} onChange={v => setForm(f => ({...f, iban: v}))} placeholder="AE070331234567890123456" />
+            <Field label="Peppol ID" value={form.peppol_id} onChange={v => setForm(f => ({...f, peppol_id: v}))} placeholder="0235:100000000000003" />
           </div>
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowForm(false)}

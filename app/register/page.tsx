@@ -1,9 +1,32 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+
+interface RegFieldProps {
+  label: string;
+  field: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  value: string;
+  onChange: (v: string) => void;
+}
+
+function RegField({ label, type = "text", placeholder, required = false, value, onChange }: RegFieldProps) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} required={required}
+        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,18 +80,6 @@ export default function RegisterPage() {
     </div>
   );
 
-  const Field = ({ label, field, type = "text", placeholder, required = false }:
-    { label: string; field: keyof typeof form; type?: string; placeholder?: string; required?: boolean }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
-      <input type={type} value={form[field]}
-        onChange={e => set(field, e.target.value)}
-        placeholder={placeholder} required={required}
-        className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

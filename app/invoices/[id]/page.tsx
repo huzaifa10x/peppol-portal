@@ -5,9 +5,9 @@ import {
   ArrowLeft, CheckCircle, Clock, XCircle,
   Send, FileText, Shield, RefreshCw, RotateCcw
 } from "lucide-react";
-import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 interface StatusEvent { status: string; notes: string | null; created_at: string; }
 interface Doc {

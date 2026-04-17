@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { tenantApi, Tenant, TenantUser } from "@/lib/api";
 import { Building2, Users, Plus, ChevronDown, ChevronRight, CheckCircle, XCircle, Settings } from "lucide-react";
-import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 export default function AdminPage() {
   const [tenants, setTenants]         = useState<Tenant[]>([]);

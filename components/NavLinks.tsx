@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, GitBranch, FileText, Send,
   CheckSquare, Shield, Building2, Activity,
-  Receipt, FilePlus, ArrowUpRight, Settings
+  Receipt, FilePlus, ArrowUpRight, Settings, SlidersHorizontal
 } from "lucide-react";
 
 const nav = [
@@ -19,6 +19,7 @@ const nav = [
   { href: "/tdds",           label: "TDDs / MLS",      icon: Shield },
   { href: "/master-data",    label: "Master Data",     icon: Building2 },
   { href: "/admin",          label: "Admin",           icon: Settings },
+  { href: "/settings",       label: "Settings",        icon: SlidersHorizontal },
   { href: "/system",         label: "System",          icon: Activity },
 ];
 

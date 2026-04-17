@@ -1,6 +1,5 @@
-import { NEXT_PUBLIC_API_URL } from "./utils";
 
-const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { cache: "no-store" });

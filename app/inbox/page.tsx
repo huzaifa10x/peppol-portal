@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { dbApi, DBDocument, api } from "@/lib/api";
 import { RefreshCw, FileText, Search } from "lucide-react";
-import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
+
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-AE", { minimumFractionDigits: 2 }).format(n);
@@ -47,7 +47,7 @@ export default function InboxPage() {
     // Fetch raw XML directly by path via sidecar
     try {
       const res = await fetch(
-        `${NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com"}/inbox?limit=200`
+        `${process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com"}/inbox?limit=200`
       );
       const data = await res.json();
       const match = data.documents?.find((d: { filename: string; id: string }) =>
@@ -55,7 +55,7 @@ export default function InboxPage() {
       );
       if (match) {
         const r = await fetch(
-          `${NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com"}/inbox/${match.id}`
+          `${process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com"}/inbox/${match.id}`
         );
         const xml = await r.json();
         setXml(xml.content ?? "No content");

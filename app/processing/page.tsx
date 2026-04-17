@@ -5,9 +5,9 @@ import {
   Upload, CheckCircle, RefreshCw, AlertCircle,
   Send, FileText, Shield, Wifi, RotateCcw
 } from "lucide-react";
-import { NEXT_PUBLIC_API_URL } from "@/lib/utils";
 
-const BASE = NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
+
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 export default function ProcessingPage() {
   const [stats, setStats]         = useState<TenantStats | null>(null);
