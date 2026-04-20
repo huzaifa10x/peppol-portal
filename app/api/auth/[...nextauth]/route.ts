@@ -1,9 +1,10 @@
+export const runtime = "nodejs";
+
 import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 const API = process.env.API_URL || "https://api.kasaadvisory.com";
 
-export const runtime = 'edge';
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
