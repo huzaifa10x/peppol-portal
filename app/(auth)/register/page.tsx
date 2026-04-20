@@ -3,16 +3,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowLeft } from "lucide-react";
 
-interface RegFieldProps {
-  label: string;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-  value: string;
-  onChange: (v: string) => void;
-}
-
-function RegField({ label, type = "text", placeholder, required = false, value, onChange }: RegFieldProps) {
+function RegField({ label, type = "text", placeholder, required = false, value, onChange, hint }: {
+  label: string; type?: string; placeholder?: string; required?: boolean;
+  value: string; onChange: (v: string) => void; hint?: string;
+}) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -21,6 +15,7 @@ function RegField({ label, type = "text", placeholder, required = false, value, 
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder} required={required}
         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -28,38 +23,50 @@ function RegField({ label, type = "text", placeholder, required = false, value, 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
-    company_name: "", tax_id: "", email: "", password: "", confirm_password: "",
-    contact_name: "", phone: "", address: "",
+    company_name: "", slug: "", peppol_id: "",
+    name: "", email: "", password: "", confirm_password: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
+  const set = (field: string, value: string) => {
+    setForm(f => {
+      const updated = { ...f, [field]: value };
+      // Auto-generate slug from company_name
+      if (field === "company_name") {
+        updated.slug = value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      }
+      return updated;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password !== form.confirm_password) {
-      setError("Passwords do not match");
-      return;
-    }
+    if (form.password !== form.confirm_password) { setError("Passwords do not match"); return; }
+    if (form.password.length < 8) { setError("Password must be at least 8 characters"); return; }
     setLoading(true); setError("");
     try {
       const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
       const res = await fetch(`${BASE}/auth/register-tenant`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          company_name: form.company_name,
+          slug:         form.slug,
+          peppol_id:    form.peppol_id || "",
+          name:         form.name,
+          email:        form.email,
+          password:     form.password,
+        }),
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.created) {
         setSuccess(true);
       } else {
-        const data = await res.json();
-        setError(data.detail || data.error || "Registration failed");
+        setError(data.detail || data.error || JSON.stringify(data));
       }
-    } catch {
-      setError("Connection error — please try again");
-    }
+    } catch { setError("Connection error — please try again"); }
     setLoading(false);
   };
 
@@ -70,13 +77,11 @@ export default function RegisterPage() {
           <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Shield size={28} className="text-green-600" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Registration Submitted</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Your account request has been submitted. Our team will review and activate your account shortly.
-          </p>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Account Created!</h2>
+          <p className="text-sm text-gray-500 mb-6">Your tenant account has been created. You can now sign in.</p>
           <button onClick={() => router.push("/login")}
             className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700">
-            Back to Login
+            Sign In Now
           </button>
         </div>
       </div>
@@ -95,42 +100,33 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
+
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Company Info</p>
+            <RegField label="Company Name" value={form.company_name} onChange={v => set("company_name", v)}
+              placeholder="ACME Trading LLC" required />
+            <RegField label="Slug (URL identifier)" value={form.slug} onChange={v => set("slug", v)}
+              placeholder="acme-trading-llc" required hint="Auto-generated from company name, letters/numbers/hyphens only" />
+            <RegField label="Peppol ID" value={form.peppol_id} onChange={v => set("peppol_id", v)}
+              placeholder="0235:100123456700003" hint="Optional — e.g. 0235:TRN" />
+
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide pt-2">Admin Account</p>
+            <RegField label="Your Name" value={form.name} onChange={v => set("name", v)}
+              placeholder="John Smith" required />
+            <RegField label="Email" type="email" value={form.email} onChange={v => set("email", v)}
+              placeholder="admin@company.com" required />
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <RegField label="Company Name" value={form.company_name}
-                  onChange={v => set("company_name", v)} placeholder="ACME Trading LLC" required />
-              </div>
-              <RegField label="Tax ID (TRN)" value={form.tax_id}
-                onChange={v => set("tax_id", v)} placeholder="100123456700003" required />
-              <RegField label="Phone" value={form.phone}
-                onChange={v => set("phone", v)} placeholder="+971 50 000 0000" />
-              <div className="col-span-2">
-                <RegField label="Address" value={form.address}
-                  onChange={v => set("address", v)} placeholder="Dubai, UAE" />
-              </div>
-              <div className="col-span-2 border-t border-gray-100 pt-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Admin Account</p>
-              </div>
-              <RegField label="Contact Name" value={form.contact_name}
-                onChange={v => set("contact_name", v)} placeholder="John Smith" required />
-              <RegField label="Email" type="email" value={form.email}
-                onChange={v => set("email", v)} placeholder="admin@company.com" required />
-              <RegField label="Password" type="password" value={form.password}
-                onChange={v => set("password", v)} placeholder="••••••••" required />
+              <RegField label="Password" type="password" value={form.password} onChange={v => set("password", v)}
+                placeholder="••••••••" required />
               <RegField label="Confirm Password" type="password" value={form.confirm_password}
                 onChange={v => set("confirm_password", v)} placeholder="••••••••" required />
             </div>
 
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                {error}
-              </div>
-            )}
+            {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
             <button type="submit" disabled={loading}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {loading ? "Submitting..." : "Request Access"}
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors mt-2">
+              {loading ? "Creating account..." : "Create Account"}
             </button>
           </form>
         </div>
