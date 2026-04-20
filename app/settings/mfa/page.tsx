@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/session";
 import { Shield, CheckCircle, Smartphone, Copy, AlertTriangle } from "lucide-react";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";

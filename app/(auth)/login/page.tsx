@@ -1,11 +1,12 @@
+// /Users/macbook/Documents/Next Projects/peppol-portal/app/(auth)/login/page.tsx
 "use client";
+
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Shield, Eye, EyeOff, Smartphone } from "lucide-react";
 
 export default function LoginPage() {
-  const router   = useRouter();
+  const router = useRouter();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [totp, setTotp]         = useState("");
@@ -18,47 +19,15 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true); setError("");
     try {
-      // Check if user has MFA enabled
-      const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
-      
-      if (step === "credentials") {
-        // First check password, then check if MFA needed
-        const check = await fetch(`${BASE}/auth/login`, {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ email, password }),
-        });
-        
-        if (!check.ok) { setError("Invalid email or password"); setLoading(false); return; }
-        
-        const data = await check.json();
-        const user = data.user || data;
-        
-        if (user.totp_enabled) {
-          // Needs MFA step
-          setStep("mfa");
-          setLoading(false);
-          return;
-        }
-        
-        // No MFA — sign in directly
-        const result = await signIn("credentials", {
-          email, password, totp: "", redirect: false,
-        });
-        if (result?.ok) {
-          router.refresh();
-          router.push("/");
-        } else setError("Sign in failed — please try again");
-      } else {
-        // MFA step
-        const result = await signIn("credentials", {
-          email, password, totp, redirect: false,
-        });
-        if (result?.ok) {
-          router.refresh();
-          router.push("/");
-        } else setError("Invalid MFA code — try again");
-      }
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, totp: step === "mfa" ? totp : undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Login failed"); setLoading(false); return; }
+      if (data.mfa_required) { setStep("mfa"); setLoading(false); return; }
+      if (data.ok) { router.refresh(); router.push("/"); }
     } catch { setError("Connection error"); }
     setLoading(false);
   };
@@ -66,7 +35,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield size={28} className="text-white" />
@@ -74,7 +42,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900">Peppol Portal</h1>
           <p className="text-sm text-gray-500 mt-1">KASA Advisory Service FZE</p>
         </div>
-
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           {step === "credentials" ? (
             <>
@@ -98,13 +65,9 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
-                {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
+                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
                 <button type="submit" disabled={loading}
-                  className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm">
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50">
                   {loading ? "Signing in..." : "Sign in"}
                 </button>
               </form>
@@ -121,41 +84,24 @@ export default function LoginPage() {
                 </div>
               </div>
               <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Authentication Code
-                  </label>
-                  <input type="text" value={totp}
-                    onChange={e => setTotp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    required autoFocus maxLength={6} placeholder="000000"
-                    className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-2xl font-mono text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" />
-                  <p className="text-xs text-gray-400 mt-1.5 text-center">
-                    Open Microsoft Authenticator or Google Authenticator
-                  </p>
-                </div>
-                {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
+                <input type="text" value={totp}
+                  onChange={e => setTotp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required autoFocus maxLength={6} placeholder="000000"
+                  className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-2xl font-mono text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" />
+                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
                 <button type="submit" disabled={loading || totp.length !== 6}
-                  className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50">
                   {loading ? "Verifying..." : "Verify & Sign in"}
                 </button>
                 <button type="button" onClick={() => { setStep("credentials"); setError(""); setTotp(""); }}
-                  className="w-full py-2 text-sm text-gray-500 hover:text-gray-700">
-                  ← Back to login
-                </button>
+                  className="w-full py-2 text-sm text-gray-500 hover:text-gray-700">← Back to login</button>
               </form>
             </>
           )}
         </div>
-
-        <div className="text-center mt-4 space-y-1">
-          <p className="text-xs text-gray-400">
-            New client? <a href="/register" className="text-blue-600 hover:underline">Create account</a>
-          </p>
-          <p className="text-xs text-gray-400">UAE PINT-AE · Seat PAE001045 · OpenPeppol Certified</p>
+        <div className="text-center mt-4">
+          <p className="text-xs text-gray-400">New client? <a href="/register" className="text-blue-600 hover:underline">Create account</a></p>
+          <p className="text-xs text-gray-400 mt-1">UAE PINT-AE · Seat PAE001045 · OpenPeppol Certified</p>
         </div>
       </div>
     </div>

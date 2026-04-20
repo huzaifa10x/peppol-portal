@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/session";
 import {
   LayoutDashboard, GitBranch, FileText, Send,
   CheckSquare, Shield, Building2, Activity,

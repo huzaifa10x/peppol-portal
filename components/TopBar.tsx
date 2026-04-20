@@ -1,11 +1,12 @@
 "use client";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, useSignOut } from "@/lib/session";
 import { useState } from "react";
 import { LogOut, ChevronDown, User } from "lucide-react";
 import NotificationCenter from "./NotificationCenter";
 
 export default function TopBar() {
   const { data: session, status } = useSession();
+  const signOut = useSignOut();
   const [showUser, setShowUser] = useState(false);
 
   return (
@@ -53,7 +54,7 @@ export default function TopBar() {
                   </div>
                   <div className="p-1.5">
                     <button
-                      onClick={() => signOut({ callbackUrl: "/login" })}
+                      onClick={signOut}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
                       <LogOut size={14} />
                       Sign out
@@ -69,7 +70,7 @@ export default function TopBar() {
       {/* Always show sign out even when session loading */}
       {status === "unauthenticated" && (
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={signOut}
           className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
           <LogOut size={14} />
           Sign out

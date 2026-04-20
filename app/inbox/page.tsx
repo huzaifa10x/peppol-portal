@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { DBDocument } from "@/lib/api";
 import { RefreshCw, FileText, Search } from "lucide-react";

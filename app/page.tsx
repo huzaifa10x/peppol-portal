@@ -1,29 +1,33 @@
+// /Users/macbook/Documents/Next Projects/peppol-portal/app/page.tsx
+"use client";
+import { useSession } from "@/lib/session";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { tenantApi, api } from "@/lib/api";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { FileText, TrendingUp, Shield, CheckCircle, XCircle, Send, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-
-export const revalidate = 15;
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-AE", { minimumFractionDigits: 2 }).format(n);
 }
 
-export default async function Dashboard() {
-  const session = await getServerSession(authOptions);
+export default function Dashboard() {
+  const router = useRouter()
+  const { data: session } = useSession();
   const tenantId = (session?.user as any)?.tenant_id;
 
-  const [stats, health, smp] = await Promise.all([
-    tenantApi.stats(tenantId).catch(() => null),
-    api.health().catch(() => null),
-    api.smp().catch(() => null),
-  ]);
+  const [stats, setStats]       = useState<any>(null);
+  const [health, setHealth]     = useState<any>(null);
+  const [smp, setSmp]           = useState<any>(null);
+  const [recentDocs, setRecent] = useState<any>(null);
 
-  const recentDocs = await tenantApi.documents({
-    limit: 8,
-    ...(tenantId ? { tenant_id: tenantId } : {}),
-  }).catch(() => null);
+  useEffect(() => {
+    if (!tenantId) return;
+    tenantApi.stats(tenantId).then(setStats).catch(() => null);
+    api.health().then(setHealth).catch(() => null);
+    api.smp().then(setSmp).catch(() => null);
+    tenantApi.documents({ tenant_id: tenantId, limit: 8 }).then(setRecent).catch(() => null);
+  }, [tenantId]);
 
   const cards = [
     {
@@ -164,7 +168,7 @@ export default async function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">SMP Participants</h2>
           <div className="space-y-3">
-            {smp?.participants.map(p => (
+            {smp?.participants?.map((p: any) => (
               <div key={p.participant} className="flex items-center justify-between">
                 <div>
                   <div className="text-xs font-medium text-gray-700">{p.label}</div>
@@ -202,9 +206,8 @@ export default async function Dashboard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {recentDocs?.documents.map(doc => (
-              <Link key={doc.id} href={`/invoices/${doc.id}`} legacyBehavior>
-                <tr className="hover:bg-gray-50 cursor-pointer">
+            {recentDocs?.documents?.map((doc: any) => (
+              <tr key={doc.id} onClick={() => router.push(`/invoices/${doc.id}`)} className="hover:bg-gray-50 cursor-pointer">
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
@@ -232,8 +235,7 @@ export default async function Dashboard() {
                       "bg-blue-100 text-blue-700"
                     }`}>{doc.status}</span>
                   </td>
-                </tr>
-              </Link>
+            </tr>
             ))}
           </tbody>
         </table>

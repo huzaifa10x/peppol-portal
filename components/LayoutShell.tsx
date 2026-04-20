@@ -1,5 +1,5 @@
 "use client";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/session";
 import { usePathname } from "next/navigation";
 import NavLinks from "./NavLinks";
 import TopBar from "./TopBar";

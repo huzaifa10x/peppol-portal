@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/session";
 import { tenantApi, DBDocument } from "@/lib/api";
 import { Plus, RefreshCw, Send, XCircle, Clock, CheckCircle, RotateCcw } from "lucide-react";
 
