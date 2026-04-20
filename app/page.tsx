@@ -12,14 +12,26 @@ function fmt(n: number) {
 }
 
 export default function Dashboard() {
-  const router = useRouter()
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const tenantId = (session?.user as any)?.tenant_id;
 
   const [stats, setStats]       = useState<any>(null);
   const [health, setHealth]     = useState<any>(null);
   const [smp, setSmp]           = useState<any>(null);
   const [recentDocs, setRecent] = useState<any>(null);
+
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  // While the session is still loading, render nothing (avoids flash of empty UI)
+  // Once resolved, redirect to /login if unauthenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, router]);
+
+  if (status === "loading" || status === "unauthenticated") return null;
+  // ────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!tenantId) return;
@@ -106,9 +118,9 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Document Breakdown</h2>
           <div className="space-y-3">
             {[
-              { label: "Billing (0235:pae001045)",  value: stats?.billing ?? 0,     color: "bg-blue-500" },
-              { label: "Self-Billing (0235:2222)",  value: stats?.selfbilling ?? 0, color: "bg-purple-500" },
-              { label: "Invoices",                  value: stats?.invoices ?? 0,    color: "bg-green-500" },
+              { label: "Billing (0235:pae001045)",  value: stats?.billing ?? 0,      color: "bg-blue-500" },
+              { label: "Self-Billing (0235:2222)",  value: stats?.selfbilling ?? 0,  color: "bg-purple-500" },
+              { label: "Invoices",                  value: stats?.invoices ?? 0,     color: "bg-green-500" },
               { label: "Credit Notes",              value: stats?.credit_notes ?? 0, color: "bg-amber-500" },
             ].map(({ label, value, color }) => {
               const pct = stats?.total ? Math.round((value / stats.total) * 100) : 0;
@@ -208,34 +220,34 @@ export default function Dashboard() {
           <tbody className="divide-y divide-gray-50">
             {recentDocs?.documents?.map((doc: any) => (
               <tr key={doc.id} onClick={() => router.push(`/invoices/${doc.id}`)} className="hover:bg-gray-50 cursor-pointer">
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                        doc.participant_type === "billing" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                      }`}>{doc.participant_type === "billing" ? "B" : "SB"}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                        doc.direction === "outbound" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"
-                      }`}>{doc.direction === "outbound" ? "OUT" : "IN"}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs font-mono text-gray-600 max-w-[120px] truncate">
-                    {doc.invoice_number ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">{doc.supplier_name ?? "—"}</td>
-                  <td className="px-4 py-3 text-xs text-gray-700">{doc.buyer_name ?? "—"}</td>
-                  <td className="px-4 py-3 text-xs font-medium text-gray-800">
-                    {doc.payable_amount ? fmt(doc.payable_amount) : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{doc.issue_date ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      doc.status === "sent" || doc.status === "acknowledged" ? "bg-green-100 text-green-700" :
-                      doc.status === "send_failed" ? "bg-red-100 text-red-700" :
-                      doc.status === "draft" ? "bg-gray-100 text-gray-600" :
-                      "bg-blue-100 text-blue-700"
-                    }`}>{doc.status}</span>
-                  </td>
-            </tr>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1">
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      doc.participant_type === "billing" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                    }`}>{doc.participant_type === "billing" ? "B" : "SB"}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      doc.direction === "outbound" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"
+                    }`}>{doc.direction === "outbound" ? "OUT" : "IN"}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-xs font-mono text-gray-600 max-w-[120px] truncate">
+                  {doc.invoice_number ?? "—"}
+                </td>
+                <td className="px-4 py-3 text-xs text-gray-700">{doc.supplier_name ?? "—"}</td>
+                <td className="px-4 py-3 text-xs text-gray-700">{doc.buyer_name ?? "—"}</td>
+                <td className="px-4 py-3 text-xs font-medium text-gray-800">
+                  {doc.payable_amount ? fmt(doc.payable_amount) : "—"}
+                </td>
+                <td className="px-4 py-3 text-xs text-gray-500">{doc.issue_date ?? "—"}</td>
+                <td className="px-4 py-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    doc.status === "sent" || doc.status === "acknowledged" ? "bg-green-100 text-green-700" :
+                    doc.status === "send_failed" ? "bg-red-100 text-red-700" :
+                    doc.status === "draft" ? "bg-gray-100 text-gray-600" :
+                    "bg-blue-100 text-blue-700"
+                  }`}>{doc.status}</span>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>

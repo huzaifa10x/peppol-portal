@@ -1,32 +1,54 @@
+// /Users/macbook/Documents/Next Projects/peppol-portal/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026"
-);
-
-const PUBLIC = ["/login", "/register", "/api/auth", "/api/"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/session",
+];
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (PUBLIC.some(p => pathname.startsWith(p))) return NextResponse.next();
 
+  // Allow public paths through unconditionally
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  // Allow Next.js internals and static assets through
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
+  }
+
+  // Everything else (including "/") requires a valid session cookie
   const token = req.cookies.get("session")?.value;
-  if (!token) return NextResponse.redirect(new URL("/login", req.url));
+
+  if (!token) {
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    // Preserve the originally requested URL so we can redirect back after login
+    loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
-    const role = (payload as any).role ?? "viewer";
-    const adminRoutes = ["/admin", "/system", "/processing", "/master-data"];
-    if (adminRoutes.some(r => pathname.startsWith(r)) && role !== "super_admin") {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET ?? "");
+    await jwtVerify(token, secret);
     return NextResponse.next();
   } catch {
-    return NextResponse.redirect(new URL("/login", req.url));
+    // Token invalid or expired — clear cookie and redirect to login
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("from", pathname);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete("session");
+    return response;
   }
 }
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).)"]
-};
