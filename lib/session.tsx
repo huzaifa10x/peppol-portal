@@ -15,30 +15,39 @@ interface SessionContextType {
   user: User | null;
   status: "loading" | "authenticated" | "unauthenticated";
   signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType>({
   user: null,
   status: "loading",
   signOut: async () => {},
+  refresh: async () => {},
 });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
 
+  const fetchSession = async () => {
+    try {
+      const r = await fetch("/api/auth/session", { cache: "no-store" });
+      const data = await r.json();
+      if (data.user) {
+        setUser(data.user);
+        setStatus("authenticated");
+      } else {
+        setUser(null);
+        setStatus("unauthenticated");
+      }
+    } catch {
+      setUser(null);
+      setStatus("unauthenticated");
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then(r => r.json())
-      .then(data => {
-        if (data.user) {
-          setUser(data.user);
-          setStatus("authenticated");
-        } else {
-          setStatus("unauthenticated");
-        }
-      })
-      .catch(() => setStatus("unauthenticated"));
+    fetchSession();
   }, []);
 
   const signOut = async () => {
@@ -49,7 +58,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SessionContext.Provider value={{ user, status, signOut }}>
+    <SessionContext.Provider value={{ user, status, signOut, refresh: fetchSession }}>
       {children}
     </SessionContext.Provider>
   );
@@ -60,6 +69,7 @@ export function useSession() {
   return {
     data: ctx.user ? { user: ctx.user } : null,
     status: ctx.status,
+    refresh: ctx.refresh,
   };
 }
 

@@ -12,10 +12,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   const isAuthPage = AUTH_ROUTES.some(r => pathname.startsWith(r));
 
-  if (isAuthPage || status === "unauthenticated") {
+  // Auth pages never show sidebar
+  if (isAuthPage) {
     return <>{children}</>;
   }
 
+  // While loading session, show spinner
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -24,9 +26,15 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     );
   }
 
+  // Not authenticated - still render children (proxy.ts handles redirect)
+  // This avoids flash of redirect before cookie is read
+  if (status === "unauthenticated") {
+    return <>{children}</>;
+  }
+
+  // Authenticated - show full layout with sidebar
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar */}
       <div className="w-52 bg-white border-r border-gray-200 flex flex-col shrink-0">
         <div className="px-4 py-4 border-b border-gray-100">
           <div className="text-sm font-bold text-blue-700">PEPPOL PORTAL</div>
@@ -41,8 +49,6 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <div className="text-xs text-gray-400">UAE · PINT-AE · Oxalis-NG 1.2.0</div>
         </div>
       </div>
-
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-auto">

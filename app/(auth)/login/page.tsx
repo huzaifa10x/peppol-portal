@@ -1,10 +1,8 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Shield, Eye, EyeOff, Smartphone } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [totp, setTotp]         = useState("");
@@ -38,8 +36,7 @@ export default function LoginPage() {
       }
 
       if (data.ok) {
-        router.refresh();
-        router.push("/");
+        window.location.href = "/";
         return;
       }
 
