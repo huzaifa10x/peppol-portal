@@ -31,7 +31,8 @@ export default function LoginPage() {
         
         if (!check.ok) { setError("Invalid email or password"); setLoading(false); return; }
         
-        const user = await check.json();
+        const data = await check.json();
+        const user = data.user || data;
         
         if (user.totp_enabled) {
           // Needs MFA step
@@ -44,15 +45,19 @@ export default function LoginPage() {
         const result = await signIn("credentials", {
           email, password, totp: "", redirect: false,
         });
-        if (result?.ok) router.push("/");
-        else setError("Sign in failed");
+        if (result?.ok) {
+          router.refresh();
+          router.push("/");
+        } else setError("Sign in failed — please try again");
       } else {
         // MFA step
         const result = await signIn("credentials", {
           email, password, totp, redirect: false,
         });
-        if (result?.ok) router.push("/");
-        else setError("Invalid MFA code — try again");
+        if (result?.ok) {
+          router.refresh();
+          router.push("/");
+        } else setError("Invalid MFA code — try again");
       }
     } catch { setError("Connection error"); }
     setLoading(false);

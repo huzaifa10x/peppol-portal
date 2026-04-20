@@ -30,7 +30,10 @@ export const authOptions: AuthOptions = {
           const user = data.user || data;
 
           // Step 2: Check if MFA is required
-          if (user.totp_enabled && credentials.totp) {
+          if (user.totp_enabled) {
+            // MFA required but no code provided — block login
+            if (!credentials.totp) return null;
+            
             const mfa = await fetch(`${API}/auth/mfa/validate`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },

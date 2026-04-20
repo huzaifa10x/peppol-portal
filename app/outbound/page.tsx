@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { tenantApi, DBDocument } from "@/lib/api";
 import { Plus, RefreshCw, Send, XCircle, Clock, CheckCircle, RotateCcw } from "lucide-react";
 
@@ -21,6 +22,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function OutboundPage() {
   const router  = useRouter();
+  const { data: session } = useSession();
+  const tenantId = (session?.user as any)?.tenant_id ?? "";
   const [docs, setDocs]       = useState<DBDocument[]>([]);
   const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,7 +33,7 @@ export default function OutboundPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const r = await tenantApi.documents({ direction: "outbound", limit: LIMIT, offset });
+    const r = await tenantApi.documents({ direction: "outbound", limit: LIMIT, offset, ...(tenantId ? { tenant_id: tenantId } : {}) });
     setDocs(r.documents);
     setTotal(r.total);
     setLoading(false);
