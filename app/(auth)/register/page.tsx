@@ -53,11 +53,11 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           company_name: form.company_name,
-          slug:         form.slug,
-          peppol_id:    form.peppol_id || "",
-          name:         form.name,
-          email:        form.email,
-          password:     form.password,
+          slug: form.slug,
+          peppol_id: form.peppol_id || "",
+          name: form.name,
+          email: form.email,
+          password: form.password,
         }),
       });
       const data = await res.json();
@@ -138,6 +138,7 @@ export default function RegisterPage() {
           </button>
         </div>
       </div>
+      <p className="fixed bottom-0 p-2 bg-red-200 text-xs w-full text-center">"This is a demonstration system. Data shown is for illustrative purposes only and does not represent real transactions."</p>
     </div>
   );
 }

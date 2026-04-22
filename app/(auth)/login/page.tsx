@@ -3,13 +3,13 @@ import { useState } from "react";
 import { Shield, Eye, EyeOff, Smartphone } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [totp, setTotp]         = useState("");
+  const [totp, setTotp] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [step, setStep]         = useState<"credentials" | "mfa">("credentials");
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [step, setStep] = useState<"credentials" | "mfa">("credentials");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +75,7 @@ export default function LoginPage() {
                       className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 pr-10" />
                     <button type="button" onClick={() => setShowPass(!showPass)}
                       className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                      {showPass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
@@ -122,6 +122,7 @@ export default function LoginPage() {
           <p className="text-xs text-gray-400">UAE PINT-AE · Seat PAE001045 · OpenPeppol Certified</p>
         </div>
       </div>
+      <p className="fixed bottom-0 p-2 bg-red-200 text-xs w-full text-center">"This is a demonstration system. Data shown is for illustrative purposes only and does not represent real transactions."</p>
     </div>
   );
 }
