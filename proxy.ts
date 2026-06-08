@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 
 const PUBLIC_PATHS = [
   "/login",
+  "/onboard",
   "/register",
   "/api/auth/login",
   "/api/auth/logout",
