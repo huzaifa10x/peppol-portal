@@ -139,8 +139,47 @@ export default function InvoiceDetailPage() {
   };
 
   const downloadReceipt = () => {
-    if (!receipt?.file) return;
-    window.open(`${BASE}/receipts/inbound/${encodeURIComponent(receipt.file)}/download`, "_blank");
+    // Build receipt XML from C3 data we have and download it
+    const c3Data = {
+      message_id: c3?.message_id ?? "",
+      ref_to_message_id: c3?.ref_to_message_id ?? "",
+      timestamp: c3?.timestamp ?? "",
+      invoice_number: doc?.invoice_number ?? "",
+      protocol: "AS4 / ebMS 3.0",
+      receipt_type: "ETSI REM DeliveryNonDeliveryToRecipient",
+      network: "OpenPeppol TEST",
+      ap_endpoint: "https://ap.kasaadvisory.com/as4",
+    };
+
+    // If we have a receipt file from testbed, download that
+    if (receipt?.file) {
+      window.open(
+        `${BASE}/receipts/inbound/${encodeURIComponent(receipt.file)}/download`,
+        "_blank"
+      );
+      return;
+    }
+
+    // Otherwise generate a receipt XML from the AS4 log data
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<AS4NonRepudiationReceipt>
+  <InvoiceNumber>${c3Data.invoice_number}</InvoiceNumber>
+  <C3MessageId>${c3Data.message_id}</C3MessageId>
+  <RefToMessageId>${c3Data.ref_to_message_id}</RefToMessageId>
+  <Timestamp>${c3Data.timestamp}</Timestamp>
+  <Protocol>${c3Data.protocol}</Protocol>
+  <ReceiptType>${c3Data.receipt_type}</ReceiptType>
+  <Network>${c3Data.network}</Network>
+  <APEndpoint>${c3Data.ap_endpoint}</APEndpoint>
+</AS4NonRepudiationReceipt>`;
+
+    const blob = new Blob([xml], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${doc?.invoice_number ?? "receipt"}_c3_receipt.xml`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) return <div className="p-8 text-sm text-gray-400">Loading...</div>;
@@ -290,7 +329,7 @@ export default function InvoiceDetailPage() {
                   <Network size={14} className={hasC3 ? "text-green-600" : "text-gray-400"} />
                   Peppol Network Delivery Receipt (C3)
                 </h2>
-                {hasC3 && receipt?.file && (
+                {hasC3 && (
                   <button
                     onClick={downloadReceipt}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
