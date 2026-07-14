@@ -309,7 +309,9 @@ export default function InvoiceDetailPage() {
                   </div>
                   <div className="grid grid-cols-1 gap-1.5 mt-2 pl-5">
                     {[
-                      ["C3 Timestamp", c3?.timestamp ?? receipt?.event_time],
+                      ["C3 Timestamp", c3?.timestamp
+                        ? new Date(c3.timestamp).toLocaleString()
+                        : receipt?.event_time],
                       ["C3 Message ID", c3?.message_id ?? receipt?.message_id],
                       ["Ref Message", c3?.ref_to_message_id],
                       ["Sender AP", "OpenPeppol TEST Network"],
