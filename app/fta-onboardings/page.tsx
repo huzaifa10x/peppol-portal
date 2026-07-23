@@ -32,7 +32,7 @@ function fmt_date(iso: string) {
 function exportCSV(rows: Onboarding[]) {
   const headers = ["TIN", "Entity Name", "VAT TRN", "Email", "Peppol ID", "Action", "Status", "Date"];
   const data = rows.map(r => [
-    r.tin, r.entity_name_en, r.vat_trn, r.email,
+    r.tin, r.entity_name_en || r.tin, r.vat_trn, r.email,
     r.peppol_id, r.action_label, r.status,
     fmt_date(r.updated_at),
   ]);
@@ -73,7 +73,7 @@ export default function FTAOnboardingsPage() {
       const s = search.toLowerCase();
       out = out.filter(r =>
         r.tin.includes(s) ||
-        r.entity_name_en.toLowerCase().includes(s) ||
+        r.entity_name_en || r.tin.toLowerCase().includes(s) ||
         r.email.toLowerCase().includes(s) ||
         r.vat_trn.includes(s)
       );
