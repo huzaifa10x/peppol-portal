@@ -138,46 +138,44 @@ export default function InvoiceDetailPage() {
     setSyncing(false);
   };
 
-  const downloadReceipt = () => {
-    // Build receipt XML from C3 data we have and download it
-    const c3Data = {
-      message_id: c3?.message_id ?? "",
-      ref_to_message_id: c3?.ref_to_message_id ?? "",
-      timestamp: c3?.timestamp ?? "",
-      invoice_number: doc?.invoice_number ?? "",
-      protocol: "AS4 / ebMS 3.0",
-      receipt_type: "ETSI REM DeliveryNonDeliveryToRecipient",
-      network: "OpenPeppol TEST",
-      ap_endpoint: "https://ap.kasaadvisory.com/as4",
-    };
+  const downloadReceipt = async () => {
+    try {
+      // Try to get the real AS4 NonRepudiation Receipt (SOAP envelope)
+      const res = await fetch(`${BASE}/receipts/document/${id}/as4-receipt`, {
+        credentials: "include",
+      });
 
-    // If we have a receipt file from testbed, download that
-    if (receipt?.file) {
-      window.open(
-        `${BASE}/receipts/inbound/${encodeURIComponent(receipt.file)}/download`,
-        "_blank"
-      );
-      return;
-    }
+      if (res.ok) {
+        const xml = await res.text();
+        const blob = new Blob([xml], { type: "application/xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${doc?.invoice_number ?? id}_AS4_NonRepudiationReceipt.xml`;
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+    } catch { }
 
-    // Otherwise generate a receipt XML from the AS4 log data
+    // Fallback: generate summary XML from stored C3 fields
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <AS4NonRepudiationReceipt>
-  <InvoiceNumber>${c3Data.invoice_number}</InvoiceNumber>
-  <C3MessageId>${c3Data.message_id}</C3MessageId>
-  <RefToMessageId>${c3Data.ref_to_message_id}</RefToMessageId>
-  <Timestamp>${c3Data.timestamp}</Timestamp>
-  <Protocol>${c3Data.protocol}</Protocol>
-  <ReceiptType>${c3Data.receipt_type}</ReceiptType>
-  <Network>${c3Data.network}</Network>
-  <APEndpoint>${c3Data.ap_endpoint}</APEndpoint>
+  <InvoiceNumber>${doc?.invoice_number ?? ""}</InvoiceNumber>
+  <C3MessageId>${c3?.message_id ?? ""}</C3MessageId>
+  <RefToMessageId>${c3?.ref_to_message_id ?? ""}</RefToMessageId>
+  <Timestamp>${c3?.timestamp ?? ""}</Timestamp>
+  <Protocol>AS4 / ebMS 3.0</Protocol>
+  <ReceiptType>ETSI REM DeliveryNonDeliveryToRecipient</ReceiptType>
+  <Network>OpenPeppol TEST</Network>
+  <APEndpoint>https://ap.kasaadvisory.com/as4</APEndpoint>
 </AS4NonRepudiationReceipt>`;
 
     const blob = new Blob([xml], { type: "application/xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${doc?.invoice_number ?? "receipt"}_c3_receipt.xml`;
+    a.download = `${doc?.invoice_number ?? id}_receipt.xml`;
     a.click();
     URL.revokeObjectURL(url);
   };
