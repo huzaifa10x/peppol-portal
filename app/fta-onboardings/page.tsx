@@ -5,20 +5,20 @@ import { Download, Search, RefreshCw, Users, CheckCircle, XCircle, RotateCcw } f
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 interface Onboarding {
-  id:             number;
-  tin:            string;
-  vat_trn:        string;
+  id: number;
+  tin: string;
+  vat_trn: string;
   entity_name_en: string;
   entity_name_ar: string;
-  legal_type:     string;
-  email:          string;
-  mobile:         string;
-  peppol_id:      string;
-  action:         number;
-  action_label:   string;
-  status:         string;
-  created_at:     string;
-  updated_at:     string;
+  legal_type: string;
+  email: string;
+  mobile: string;
+  peppol_id: string;
+  action: number;
+  action_label: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 function fmt_date(iso: string) {
@@ -45,10 +45,10 @@ function exportCSV(rows: Onboarding[]) {
 }
 
 export default function FTAOnboardingsPage() {
-  const [rows, setRows]       = useState<Onboarding[]>([]);
-  const [filtered, setFilt]   = useState<Onboarding[]>([]);
+  const [rows, setRows] = useState<Onboarding[]>([]);
+  const [filtered, setFilt] = useState<Onboarding[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch]   = useState("");
+  const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState("");
   const [actionF, setActionF] = useState("");
 
@@ -82,8 +82,8 @@ export default function FTAOnboardingsPage() {
   }, [rows, search, statusF, actionF]);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
-  const total    = rows.length;
-  const active   = rows.filter(r => r.status === "Active").length;
+  const total = rows.length;
+  const active = rows.filter(r => r.status === "Active").length;
   const inactive = rows.filter(r => r.status === "Inactive").length;
 
   return (
@@ -222,22 +222,20 @@ export default function FTAOnboardingsPage() {
 
                 {/* Action */}
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    row.action === 1 ? "bg-blue-100 text-blue-700" :
-                    row.action === 2 ? "bg-amber-100 text-amber-700" :
-                    "bg-red-100 text-red-700"
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${row.action === 1 ? "bg-blue-100 text-blue-700" :
+                      row.action === 2 ? "bg-amber-100 text-amber-700" :
+                        "bg-red-100 text-red-700"
+                    }`}>
                     {row.action_label}
                   </span>
                 </td>
 
                 {/* Status */}
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    row.status === "Active"
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${row.status === "Active"
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-500"
-                  }`}>
+                    }`}>
                     {row.status}
                   </span>
                 </td>
