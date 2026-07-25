@@ -133,7 +133,7 @@ export default function SystemPage() {
             )}
 
             <button onClick={restoreScripts} disabled={restoring}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#7C01ED] text-white rounded-lg text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50 transition-colors">
               <Wrench size={14} className={restoring ? "animate-spin" : ""} />
               {restoring ? "Restoring..." : "Restore Send Scripts"}
             </button>

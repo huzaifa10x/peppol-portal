@@ -20,7 +20,7 @@ function FilterBtn({ label, active, onClick }: FilterBtnProps) {
   return (
     <button onClick={onClick}
       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-        active ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+        active ? "bg-[#7C01ED] text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
       }`}>
       {label}
     </button>
@@ -71,7 +71,7 @@ export default function InboxPage() {
           <p className="text-sm text-gray-500 mt-0.5">{total} documents</p>
         </div>
         <button onClick={sync} disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+          className="flex items-center gap-2 px-4 py-2 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
           <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
           {syncing ? "Syncing..." : "Sync Inbox"}
         </button>

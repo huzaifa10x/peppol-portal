@@ -73,7 +73,7 @@ export default function AdminPage() {
           <p className="text-sm text-gray-500 mt-0.5">Manage tenants and users</p>
         </div>
         <button onClick={() => setShowAddTenant(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">
+          className="flex items-center gap-2 px-4 py-2 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED]">
           <Plus size={14} /> Add Tenant
         </button>
       </div>
@@ -110,7 +110,7 @@ export default function AdminPage() {
             <button onClick={() => setShowAddTenant(false)}
               className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
             <button onClick={addTenant} disabled={saving}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              className="px-4 py-2 text-sm bg-[#7C01ED] text-white rounded-lg hover:bg-[#7C01ED] disabled:opacity-50">
               {saving ? "Creating..." : "Create Tenant"}
             </button>
           </div>
@@ -246,7 +246,7 @@ export default function AdminPage() {
                     <button onClick={() => setShowAddUser(false)}
                       className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-white">Cancel</button>
                     <button onClick={addUser} disabled={saving}
-                      className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                      className="px-3 py-1.5 text-xs bg-[#7C01ED] text-white rounded-lg hover:bg-[#7C01ED] disabled:opacity-50">
                       {saving ? "Adding..." : "Add User"}
                     </button>
                   </div>

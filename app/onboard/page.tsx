@@ -160,7 +160,7 @@ function OnboardInner() {
   const actionLabel  = action === 3 ? "Offboard" : action === 2 ? "Reverify" : "Onboard";
   const actionBtnCls =
     action === 3 ? "bg-red-600 hover:bg-red-700"
-    : "bg-blue-600 hover:bg-blue-700";
+    : "bg-[#7C01ED] hover:bg-[#7C01ED]";
 
   // ────────────────────────────────────────────────────────────────────────────
   // SUCCESS
@@ -199,7 +199,7 @@ function OnboardInner() {
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
-            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-14 h-14 bg-[#7C01ED] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Shield size={28} className="text-white" />
             </div>
             <h1 className="text-xl font-bold text-gray-900">Confirm Your Details</h1>
@@ -290,7 +290,7 @@ function OnboardInner() {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-14 h-14 bg-[#7C01ED] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield size={28} className="text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">
@@ -427,7 +427,7 @@ function OnboardInner() {
           <button
             onClick={handleVerify}
             disabled={!canVerify || loading}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mt-2"
+            className="w-full py-2.5 bg-[#7C01ED] text-white rounded-xl font-medium text-sm hover:bg-[#7C01ED] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mt-2"
           >
             {loading
               ? <><Loader2 size={16} className="animate-spin" /> Verifying...</>
@@ -452,7 +452,7 @@ export default function OnboardPage() {
       fallback={
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <div className="w-14 h-14 bg-[#7C01ED] rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
               <Shield size={28} className="text-white" />
             </div>
             <p className="text-sm text-gray-500">Loading...</p>

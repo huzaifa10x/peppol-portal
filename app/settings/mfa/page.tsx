@@ -130,7 +130,7 @@ export default function MFASetupPage() {
             ))}
           </div>
           <button onClick={startSetup} disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
             <Smartphone size={14}/>
             {loading ? "Generating..." : "Set Up MFA"}
           </button>
@@ -187,7 +187,7 @@ export default function MFASetupPage() {
                 placeholder="000000"
                 className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-xl font-mono text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <button onClick={verifySetup} disabled={loading || code.length !== 6}
-                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                className="px-4 py-2.5 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
                 {loading ? "Verifying..." : "Verify"}
               </button>
             </div>

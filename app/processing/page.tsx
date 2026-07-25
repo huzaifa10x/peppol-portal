@@ -162,7 +162,7 @@ export default function ProcessingPage() {
             Scan inbound folders and parse new XML files into the database.
           </p>
           <button onClick={syncInbox} disabled={syncing}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
             <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
             {syncing ? "Scanning..." : "Sync Inbox"}
           </button>

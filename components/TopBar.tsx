@@ -18,7 +18,7 @@ export default function TopBar() {
             <button
               onClick={() => setShowUser(!showUser)}
               className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 bg-[#7C01ED] rounded-full flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-white">
                   {session.user?.name?.[0]?.toUpperCase() ?? "K"}
                 </span>

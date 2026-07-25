@@ -38,7 +38,7 @@ export default function ValidatePage() {
         </label>
 
         <button onClick={handleValidate} disabled={!file || loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#7C01ED] text-white rounded-lg text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50 transition-colors">
           {loading ? "Validating..." : "Validate Document"}
         </button>
       </div>

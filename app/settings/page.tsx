@@ -79,7 +79,7 @@ export default function SettingsPage() {
 
           <div className="flex gap-3">
             <button onClick={save} disabled={!email || loading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
               {saved
                 ? <><CheckCircle size={14}/> Saved!</>
                 : "Save Preferences"
