@@ -16,6 +16,7 @@ import {
   AlertCircle,
   LucideProps,
 } from "lucide-react";
+import { formatTimeOnly } from "@/lib/utils";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
@@ -89,7 +90,7 @@ const PIPELINE_OUTBOUND: PipelineStage[] = [
   { key: "mapping", label: "Mapping → PINT-AE", icon: FileText, color: "blue", track: "shared", section: null, successStatus: "Status: MAPPING → MAPPED" },
   { key: "validated", label: "Validated (PINT-AE)", icon: CheckCircle, color: "blue", track: "shared", section: null, successStatus: "Status: VALIDATING → VALIDATED" },
   { key: "ready_for_dispatch", label: "Ready for Dispatch", icon: Send, color: "blue", track: "shared", section: null, successStatus: "Status: READY_FOR_DISPATCH" },
-  
+
   // Track A[cite: 1, 2]
   { key: "discovery_in_progress", label: "Discovery (SMP/SML)", icon: Network, color: "blue", track: "a", section: "Track A — Peppol Delivery (C2→C4)", successStatus: "Status: DISCOVERY_IN_PROGRESS → DISCOVERY_RESOLVED" },
   { key: "discovery_resolved", label: "Discovery Resolved", icon: CheckCircle, color: "blue", track: "a", section: null, successStatus: "Status: DISCOVERY_RESOLVED" },
@@ -100,7 +101,7 @@ const PIPELINE_OUTBOUND: PipelineStage[] = [
   { key: "awaiting_c4_response", label: "Awaiting C4 Response (MLR)", icon: Clock, color: "blue", track: "a", section: null, successStatus: "Status: AWAITING_C4_RESPONSE → ACCEPTED_C4" },
   { key: "accepted_c4", label: "Accepted by C4", icon: CheckCircle, color: "green", track: "a", section: null, successStatus: "Status: ACCEPTED_C4" },
   { key: "c4_response_not_expected", label: "C4 Response Not Expected", icon: CheckCircle, color: "green", track: "a", section: null, successStatus: "Status: C4_RESPONSE_NOT_EXPECTED" },
-  
+
   // Track B[cite: 1, 2]
   { key: "tdd_generating", label: "Generating TDD", icon: Shield, color: "purple", track: "b", section: "Track B — FTA C5 Reporting", successStatus: "Status: TDD_GENERATING → TDD_GENERATED" },
   { key: "tdd_generated", label: "TDD Generated", icon: Shield, color: "purple", track: "b", section: null, successStatus: "Status: TDD_GENERATED" },
@@ -110,7 +111,7 @@ const PIPELINE_OUTBOUND: PipelineStage[] = [
   { key: "fta_submitting", label: "Submitting to FTA (C5)", icon: Shield, color: "purple", track: "b", section: null, successStatus: "Status: FTA_SUBMITTING → FTA_RESPONSE_PENDING" },
   { key: "mock_fta_accepted", label: "Mock FTA Accepted (Simulation)", icon: CheckCircle, color: "purple", track: "b", section: null, successStatus: "Status: MOCK_FTA_ACCEPTED" },
   { key: "fta_accepted", label: "FTA Accepted (C5)", icon: CheckCircle, color: "green", track: "b", section: null, successStatus: "Status: FTA_ACCEPTED / FTA_REJECTED" },
-  
+
   // Failures[cite: 1, 2]
   { key: "send_failed", label: "Send Failed", icon: XCircle, color: "red", track: "shared", section: null, successStatus: "Status: DELIVERY_FAILED" },
   { key: "discovery_failed", label: "Discovery Failed", icon: XCircle, color: "red", track: "a", section: null, successStatus: "Status: DISCOVERY_FAILED" },
@@ -447,22 +448,23 @@ export default function InvoiceDetailPage() {
                         <div className="flex-1 pt-1">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex flex-col">
-                                <span
-                                  className={`text-xs font-bold ${done ? "text-gray-900" : "text-gray-400"
-                                    }`}
-                                >
-                                  {stage.label}
+                              <span
+                                className={`text-xs font-bold ${done ? "text-gray-900" : "text-gray-400"
+                                  }`}
+                              >
+                                {stage.label}
+                              </span>
+                              {/* PDF corresponding status string rendered below the step label[cite: 1] */}
+                              {stage.successStatus && (
+                                <span className={`text-[10px] font-mono mt-0.5 ${done ? "text-gray-500" : "text-gray-400"}`}>
+                                  {stage.successStatus}
                                 </span>
-                                {/* PDF corresponding status string rendered below the step label[cite: 1] */}
-                                {stage.successStatus && (
-                                  <span className={`text-[10px] font-mono mt-0.5 ${done ? "text-gray-500" : "text-gray-400"}`}>
-                                      {stage.successStatus}
-                                  </span>
-                                )}
+                              )}
                             </div>
                             {(event || c3Time) && (
                               <span className="text-[11px] font-medium text-gray-400 mt-0.5">
-                                {new Date(event?.created_at ?? c3Time!).toLocaleString()}
+                                {formatTimeOnly(event?.created_at ?? c3Time)}
+                                {/* {event?.created_at ?? c3Time} */}
                               </span>
                             )}
                           </div>

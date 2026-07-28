@@ -127,6 +127,8 @@ export default function CreateInvoicePage() {
   const [showUpload, setShowUpload] = useState(false);
 
   const [form, setForm] = useState({
+    invoice_number: "",
+    issue_date: "",
     supplier_name: "KASA Advisory Service FZE",
     supplier_tax_id: "100000000000003",
     supplier_address: "Abu Dhabi, UAE",
@@ -137,6 +139,7 @@ export default function CreateInvoicePage() {
     currency_code: "AED",
     due_date: "",
     note: "",
+    buyer_reference: "",
     participant_type: "billing",
   });
 
@@ -356,7 +359,7 @@ export default function CreateInvoicePage() {
       buyer_tax_id: data.buyer?.tax_id || f.buyer_tax_id,
       supplier_name: data.supplier?.name || f.supplier_name,
       supplier_tax_id: data.supplier?.tax_id || f.supplier_tax_id,
-      notes: data.notes || f.notes,
+      note: data.notes || data.note || f.note, // Changed `notes` to `note`
       buyer_reference: data.buyer_reference || f.buyer_reference,
     }));
     setDocType(data.invoice_type === "CREDIT_NOTE" ? "credit_note" : "invoice");
