@@ -44,6 +44,21 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
   return res.json();
 }
 
+async function patch<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Session expired");
+  }
+  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
+  return res.json();
+}
+
 // ── DELETE helper (missing from your current api.ts) ─────────────────────────
 
 async function del<T>(path: string): Promise<T> {
@@ -276,7 +291,9 @@ export const tenantApi = {
   },
   listTenants: () => get<{ tenants: Tenant[] }>("/tenant/list"),
   updateTenant: (id: string, data: Partial<Tenant>) =>
-    post<{ updated: boolean }>(`/tenant/${id}`, data),
+    patch<{ updated: boolean }>(`/tenant/${id}`, data),
+  updateUser: (tenantId: string, userId: string, data: Partial<TenantUser>) =>
+    patch<{ updated: boolean }>(`/tenant/${tenantId}/users/${userId}`, data),
   addUser: (tenantId: string, data: { email: string; name: string; password: string; role: string }) =>
     post<{ user_id: string; created: boolean }>(`/tenant/${tenantId}/add-user`, data),
   users: (tenantId: string) =>

@@ -103,11 +103,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         <div className="px-4 py-3 border-t border-gray-100 text-[11px] text-gray-500 flex flex-col gap-1">
           <div className="font-medium text-gray-700">UAE · PINT-AE</div>
           <div className="flex gap-2 text-gray-400">
-            <Link href="/privacy" className="hover:text-gray-600">Privacy</Link>
+            <Link href="/privacy-policy" className="hover:text-gray-600">Privacy</Link>
             <span>·</span>
-            <Link href="/terms" className="hover:text-gray-600">Terms</Link>
-            <span>·</span>
-            <Link href="/data-retention" className="hover:text-gray-600">Data Info</Link>
+            <Link href="/terms-and-conditions" className="hover:text-gray-600">Terms</Link>
           </div>
         </div>
       </div>

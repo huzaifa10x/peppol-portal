@@ -72,7 +72,7 @@ export default function InboxPage() {
           <p className="text-sm text-gray-500 mt-0.5">{total} documents</p>
         </div>
         <button onClick={sync} disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border-[#7C01ED] border text-[#7C01ED] disabled:opacity-50">
           <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
           {syncing ? "Syncing..." : "Sync Inbox"}
         </button>

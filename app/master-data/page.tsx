@@ -69,7 +69,7 @@ export default function MasterDataPage() {
             <RefreshCw size={14} className={loading ? "animate-spin text-blue-500" : "text-gray-400"} />
           </button>
           <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#7C01ED] text-white rounded-lg text-sm font-medium hover:bg-[#7C01ED]">
+            className="flex items-center gap-2 px-4 py-2 bg-white border-[#7C01ED] border text-[#7C01ED] rounded-lg">
             <Plus size={14} /> Add Organisation
           </button>
         </div>
@@ -113,7 +113,7 @@ export default function MasterDataPage() {
           <p className="text-sm font-medium text-gray-500">No organisations yet</p>
           <p className="text-xs text-gray-400 mt-1">Add your trading partners and clients here</p>
           <button onClick={() => setShowForm(true)}
-            className="mt-4 flex items-center gap-2 px-4 py-2 bg-[#7C01ED] text-white rounded-lg text-sm font-medium hover:bg-[#7C01ED] mx-auto">
+            className="mt-4 flex items-center gap-2 px-4 py-2 bg-white border-[#7C01ED] border text-[#7C01ED] rounded-lg mx-auto">
             <Plus size={14} /> Add Organisation
           </button>
         </div>

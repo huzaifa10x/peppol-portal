@@ -99,7 +99,7 @@ export default function Dashboard() {
         </div>
         <Link
           href="/create-invoice"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#7C01ED] hover:bg-[#6800CB] text-white rounded-lg text-sm font-semibold transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7C01ED]/50"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border-[#7C01ED] border text-[#7C01ED] rounded-lg text-sm font-semibold transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7C01ED]/50"
         >
           <Plus size={16} /> New Invoice
         </Link>

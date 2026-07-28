@@ -18,6 +18,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { tenantApi, DBDocument } from "@/lib/api";
+import InvoiceFileUpload from "@/components/InvoiceFileUpload";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
@@ -123,6 +124,7 @@ export default function CreateInvoicePage() {
   const [checkingReceiver, setCheckingReceiver] = useState(false);
   const [templates, setTemplates] = useState<DBDocument[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   const [form, setForm] = useState({
     supplier_name: "KASA Advisory Service FZE",
@@ -340,20 +342,61 @@ export default function CreateInvoicePage() {
     );
   }
 
+  // Add the handler that maps extracted data back to your form:
+  const handleExtracted = (data: any) => {
+    setShowUpload(false);
+    // Populate form fields
+    setForm(f => ({
+      ...f,
+      invoice_number: data.invoice_number || f.invoice_number,
+      issue_date: data.issue_date || f.issue_date,
+      due_date: data.due_date || f.due_date,
+      currency_code: data.currency_code || f.currency_code,
+      buyer_name: data.buyer?.name || f.buyer_name,
+      buyer_tax_id: data.buyer?.tax_id || f.buyer_tax_id,
+      supplier_name: data.supplier?.name || f.supplier_name,
+      supplier_tax_id: data.supplier?.tax_id || f.supplier_tax_id,
+      notes: data.notes || f.notes,
+      buyer_reference: data.buyer_reference || f.buyer_reference,
+    }));
+    setDocType(data.invoice_type === "CREDIT_NOTE" ? "credit_note" : "invoice");
+    if (data.line_items?.length) {
+      setLines(data.line_items.map((l: any) => ({
+        description: l.description,
+        quantity: l.quantity,
+        unit_code: l.unit_of_measure || "EA",
+        unit_price: l.unit_price,
+        vat_category_code: "S",
+        vat_rate: l.vat_rate,
+      })));
+    }
+  };
+
   return (
     <div className="p-6 max-w-5xl text-gray-900">
       {/* Top Bar / Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        {/* Title Section */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             Create Invoice
           </h1>
           <p className="text-xs text-gray-500 font-medium mt-0.5">
-            PINT-AE Compliant · Instant Validation &amp; Delivery
+            PINT-AE Compliant &middot; Instant Validation &amp; Delivery
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Actions Section */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Upload Button */}
+          <button
+            onClick={() => setShowUpload(true)}
+            className="px-4 py-2 bg-[#7C01ED] hover:bg-[#6c01d0] text-white rounded-xl text-xs font-semibold transition-colors shadow-sm"
+          >
+            Upload Invoice File
+          </button>
+
+          {/* Templates Dropdown */}
           {templates.length > 0 && (
             <div className="relative">
               <button
@@ -380,7 +423,7 @@ export default function CreateInvoicePage() {
                           {t.invoice_number}
                         </div>
                         <div className="text-[11px] text-gray-500">
-                          {t.buyer_name} · AED {fmt(t.payable_amount ?? 0)}
+                          {t.buyer_name} &middot; AED {fmt(t.payable_amount ?? 0)}
                         </div>
                       </button>
                     ))}
@@ -390,6 +433,7 @@ export default function CreateInvoicePage() {
             </div>
           )}
 
+          {/* Document Type Switcher */}
           <div className="flex gap-1 bg-gray-200/60 p-1 rounded-xl">
             {[
               { v: "invoice", l: "Invoice" },
@@ -926,6 +970,10 @@ export default function CreateInvoicePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showUpload && (
+        <InvoiceFileUpload onExtracted={handleExtracted} onClose={() => setShowUpload(false)} />
       )}
     </div>
   );

@@ -71,7 +71,7 @@ export default function OutboundPage() {
             <RefreshCw size={14} className={loading ? "animate-spin text-blue-500" : "text-gray-400"} />
           </button>
           <button onClick={() => router.push("/create-invoice")}
-            className="flex items-center gap-2 px-4 py-2 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED]">
+            className="flex items-center gap-2 px-4 py-2 bg-white border-[#7C01ED] border text-[#7C01ED] rounded-lg">
             <Plus size={14} /> New Invoice
           </button>
         </div>
