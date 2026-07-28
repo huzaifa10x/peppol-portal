@@ -40,7 +40,9 @@ export default async function middleware(req: NextRequest) {
   }
 
   try {
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET ?? "");
+    const secret = new TextEncoder().encode(
+      process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026-local"  // ← match Vercel
+    );
     await jwtVerify(token, secret);
     return NextResponse.next();
   } catch {

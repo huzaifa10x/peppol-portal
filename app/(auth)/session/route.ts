@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
 
 const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026"
+  process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026-local"  // ← match Vercel
 );
 
 export async function GET(req: NextRequest) {

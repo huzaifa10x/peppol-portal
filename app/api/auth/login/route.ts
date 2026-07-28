@@ -2,10 +2,10 @@ import { SignJWT } from "jose";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
-
+// /Users/macbook/Documents/Next Projects/peppol-portal/app/api/auth/login/route.ts
 const API = process.env.API_URL || "https://api.kasaadvisory.com";
 const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026"
+  process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026-local"  // ← match Vercel
 );
 
 export async function POST(req: NextRequest) {
@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
 
     // Create JWT
     const token = await new SignJWT({
-      id:           user.id,
-      email:        user.email,
-      name:         user.name,
-      role:         user.role,
-      tenant_id:    user.tenant_id,
-      tenant_name:  user.tenant_name,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      tenant_id: user.tenant_id,
+      tenant_name: user.tenant_name,
       totp_enabled: user.totp_enabled ?? false,
     })
       .setProtectedHeader({ alg: "HS256" })
@@ -60,11 +60,11 @@ export async function POST(req: NextRequest) {
     response.cookies.set("session", token, {
       httpOnly: true,
       secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: "none",
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
+      domain: ".kasaadvisory.com",
     });
-
     return response;
   } catch (e) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
