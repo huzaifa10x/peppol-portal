@@ -215,6 +215,7 @@ export default function CreateInvoicePage() {
     try {
       const res = await fetch(`${BASE}/invoices/draft`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, doc_type: docType, line_items: lines }),
       });
@@ -237,7 +238,7 @@ export default function CreateInvoicePage() {
     try {
       const res = await fetch(
         `${BASE}/invoices/${draftResult.document_id}/validate-draft`,
-        { method: "POST" }
+        { method: "POST", credentials: "include", }
       );
       const data = await res.json();
       setValidateResult(data);
@@ -257,7 +258,7 @@ export default function CreateInvoicePage() {
     try {
       const res = await fetch(
         `${BASE}/invoices/${draftResult.document_id}/send-validated`,
-        { method: "POST" }
+        { method: "POST", credentials: "include", }
       );
       const data = await res.json();
       setSendResult(data);

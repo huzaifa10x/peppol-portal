@@ -189,8 +189,8 @@ export default function InvoiceDetailPage() {
   const load = useCallback(async () => {
     try {
       const [docRes, histRes] = await Promise.all([
-        fetch(`${BASE}/tenant/documents?limit=200`).then((r) => r.json()),
-        fetch(`${BASE}/documents/${id}/status-history`).then((r) => r.json()),
+        fetch(`${BASE}/tenant/documents?limit=200`, { credentials: "include" }).then((r) => r.json()),
+        fetch(`${BASE}/documents/${id}/status-history`, { credentials: "include" }).then((r) => r.json()),
       ]);
       const found = docRes.documents?.find((d: Doc) => d.id === id) ?? null;
       setDoc(found);
@@ -223,7 +223,7 @@ export default function InvoiceDetailPage() {
           console.error("C3 fetch failed:", e);
         }
       }
-    } catch {}
+    } catch { }
     setLoading(false);
   }, [id]);
 
@@ -240,7 +240,7 @@ export default function InvoiceDetailPage() {
 
   const syncPipeline = async () => {
     setSyncing(true);
-    await fetch(`${BASE}/sync/full-pipeline`, { method: "POST" });
+    await fetch(`${BASE}/sync/full-pipeline`, { method: "POST", credentials: "include" });
     await load();
     setSyncing(false);
   };
@@ -261,7 +261,7 @@ export default function InvoiceDetailPage() {
         URL.revokeObjectURL(url);
         return;
       }
-    } catch {}
+    } catch { }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <AS4NonRepudiationReceipt>
@@ -345,11 +345,10 @@ export default function InvoiceDetailPage() {
           </h1>
           <p className="text-xs text-gray-500 font-medium mt-1 flex items-center gap-2">
             <span
-              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-                doc.direction === "outbound"
-                  ? "bg-purple-50 text-[#7C01ED] border border-purple-200"
-                  : "bg-blue-50 text-blue-700 border border-blue-200"
-              }`}
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${doc.direction === "outbound"
+                ? "bg-purple-50 text-[#7C01ED] border border-purple-200"
+                : "bg-blue-50 text-blue-700 border border-blue-200"
+                }`}
             >
               {doc.direction}
             </span>
@@ -444,9 +443,8 @@ export default function InvoiceDetailPage() {
                         <div className="flex-1 pt-1">
                           <div className="flex items-center justify-between gap-2">
                             <span
-                              className={`text-xs font-bold ${
-                                done ? "text-gray-900" : "text-gray-400"
-                              }`}
+                              className={`text-xs font-bold ${done ? "text-gray-900" : "text-gray-400"
+                                }`}
                             >
                               {stage.label}
                             </span>
@@ -514,9 +512,8 @@ export default function InvoiceDetailPage() {
           {/* C3 Receipt */}
           {doc.direction === "outbound" && (
             <div
-              className={`rounded-2xl border p-6 shadow-2xs ${
-                hasC3 ? "bg-emerald-50/50 border-emerald-200" : "bg-gray-50/60 border-gray-200"
-              }`}
+              className={`rounded-2xl border p-6 shadow-2xs ${hasC3 ? "bg-emerald-50/50 border-emerald-200" : "bg-gray-50/60 border-gray-200"
+                }`}
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">

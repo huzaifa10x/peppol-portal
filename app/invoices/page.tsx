@@ -22,7 +22,7 @@ function exportCSV(docs: DBDocument[]) {
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `invoices-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `invoices-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
 }
 
@@ -31,20 +31,20 @@ export default function InvoicesPage() {
   const tenantId = (session?.user as any)?.tenant_id ?? "";
   const router = useRouter();
 
-  const [docs, setDocs]         = useState<DBDocument[]>([]);
+  const [docs, setDocs] = useState<DBDocument[]>([]);
   const [filtered, setFiltered] = useState<DBDocument[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState("");
-  const [docType, setDocType]   = useState("");
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [docType, setDocType] = useState("");
   const [participant, setParticipant] = useState("");
 
   const load = useCallback(async () => {
     if (!tenantId) return;
     setLoading(true);
     const params = new URLSearchParams({ limit: "200", tenant_id: tenantId });
-    if (docType)    params.set("doc_type", docType);
+    if (docType) params.set("doc_type", docType);
     if (participant) params.set("participant_type", participant);
-    const r = await fetch(`${BASE}/tenant/documents?${params}`).then(r => r.json());
+    const r = await fetch(`${BASE}/tenant/documents?${params}`, { credentials: "include" }).then(r => r.json());
     setDocs(r.documents ?? []);
     setLoading(false);
   }, [tenantId, docType, participant]);
@@ -127,12 +127,10 @@ export default function InvoicesPage() {
                 className="hover:bg-gray-50 cursor-pointer">
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                      doc.participant_type === "billing" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                    }`}>{doc.participant_type === "billing" ? "B" : "SB"}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                      doc.direction === "outbound" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"
-                    }`}>{doc.direction === "outbound" ? "OUT" : "IN"}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${doc.participant_type === "billing" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                      }`}>{doc.participant_type === "billing" ? "B" : "SB"}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${doc.direction === "outbound" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"
+                      }`}>{doc.direction === "outbound" ? "OUT" : "IN"}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-xs font-mono text-gray-600">{doc.invoice_number ?? "—"}</td>
@@ -141,12 +139,11 @@ export default function InvoicesPage() {
                 <td className="px-4 py-3 text-xs font-medium">{doc.payable_amount ? fmt(doc.payable_amount) : "—"}</td>
                 <td className="px-4 py-3 text-xs text-gray-500">{doc.issue_date ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    doc.status === "sent" || doc.status === "acknowledged" ? "bg-green-100 text-green-700" :
-                    doc.status === "send_failed" ? "bg-red-100 text-red-700" :
-                    doc.status === "validated" ? "bg-blue-100 text-blue-700" :
-                    "bg-gray-100 text-gray-600"
-                  }`}>{doc.status}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${doc.status === "sent" || doc.status === "acknowledged" ? "bg-green-100 text-green-700" :
+                      doc.status === "send_failed" ? "bg-red-100 text-red-700" :
+                        doc.status === "validated" ? "bg-blue-100 text-blue-700" :
+                          "bg-gray-100 text-gray-600"
+                    }`}>{doc.status}</span>
                 </td>
                 <td className="px-4 py-3">
                   {doc.tdd_sent

@@ -7,10 +7,10 @@ import { Building2, Users, Plus, ChevronDown, ChevronRight, CheckCircle, XCircle
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 export default function AdminPage() {
-  const [tenants, setTenants]         = useState<Tenant[]>([]);
-  const [selected, setSelected]       = useState<Tenant | null>(null);
-  const [users, setUsers]             = useState<TenantUser[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [selected, setSelected] = useState<Tenant | null>(null);
+  const [users, setUsers] = useState<TenantUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showAddTenant, setShowAddTenant] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", name: "", password: "", role: "viewer" });
@@ -50,13 +50,14 @@ export default function AdminPage() {
     try {
       await fetch(`${BASE}/auth/register-tenant`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTenant),
       });
       await load();
       setNewTenant({ company_name: "", slug: "", email: "", name: "", password: "", peppol_id: "" });
       setShowAddTenant(false);
-    } catch {}
+    } catch { }
     setSaving(false);
   };
 
@@ -132,9 +133,8 @@ export default function AdminPage() {
             ) : tenants.map(t => (
               <div key={t.id}
                 onClick={() => loadUsers(t)}
-                className={`px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selected?.id === t.id ? "bg-blue-50 border-l-2 border-blue-500" : ""
-                }`}>
+                className={`px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors ${selected?.id === t.id ? "bg-blue-50 border-l-2 border-blue-500" : ""
+                  }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
@@ -146,20 +146,18 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      t.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    }`}>{t.is_active ? "Active" : "Inactive"}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${t.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      }`}>{t.is_active ? "Active" : "Inactive"}</span>
                     <ChevronRight size={14} className="text-gray-400" />
                   </div>
                 </div>
                 <div className="flex gap-4 mt-2 ml-11">
                   <span className="text-xs text-gray-400">{t.user_count} users</span>
                   <span className="text-xs text-gray-400">{t.document_count} documents</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                    t.plan === "enterprise" ? "bg-purple-100 text-purple-700" :
-                    t.plan === "pro"        ? "bg-blue-100 text-blue-700" :
-                    "bg-gray-100 text-gray-600"
-                  }`}>{t.plan}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${t.plan === "enterprise" ? "bg-purple-100 text-purple-700" :
+                      t.plan === "pro" ? "bg-blue-100 text-blue-700" :
+                        "bg-gray-100 text-gray-600"
+                    }`}>{t.plan}</span>
                 </div>
               </div>
             ))}
@@ -175,25 +173,24 @@ export default function AdminPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => toggleActive(selected)}
-                    className={`px-3 py-1.5 text-xs rounded-lg font-medium border ${
-                      selected.is_active
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium border ${selected.is_active
                         ? "border-red-200 text-red-600 hover:bg-red-50"
                         : "border-green-200 text-green-600 hover:bg-green-50"
-                    }`}>
+                      }`}>
                     {selected.is_active ? "Deactivate" : "Activate"}
                   </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  ["ID",          selected.id.slice(0, 16) + "..."],
-                  ["Slug",        selected.slug],
-                  ["Peppol ID",   selected.peppol_id || "—"],
-                  ["Plan",        selected.plan],
-                  ["Email",       selected.notification_email || "—"],
-                  ["Billing AP",  selected.billing_participant_id],
-                  ["Self-bill AP",selected.selfbilling_participant_id],
-                  ["Documents",   String(selected.document_count)],
+                  ["ID", selected.id.slice(0, 16) + "..."],
+                  ["Slug", selected.slug],
+                  ["Peppol ID", selected.peppol_id || "—"],
+                  ["Plan", selected.plan],
+                  ["Email", selected.notification_email || "—"],
+                  ["Billing AP", selected.billing_participant_id],
+                  ["Self-bill AP", selected.selfbilling_participant_id],
+                  ["Documents", String(selected.document_count)],
                 ].map(([k, v]) => (
                   <div key={k}>
                     <div className="text-gray-400 mb-0.5">{k}</div>
@@ -220,8 +217,8 @@ export default function AdminPage() {
                 <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {[
-                      { label: "Name",     field: "name",     type: "text" },
-                      { label: "Email",    field: "email",    type: "email" },
+                      { label: "Name", field: "name", type: "text" },
+                      { label: "Email", field: "email", type: "email" },
                       { label: "Password", field: "password", type: "password" },
                     ].map(({ label, field, type }) => (
                       <div key={field}>
@@ -266,14 +263,13 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        u.role === "admin"  ? "bg-purple-100 text-purple-700" :
-                        u.role === "sender" ? "bg-blue-100 text-blue-700" :
-                        "bg-gray-100 text-gray-600"
-                      }`}>{u.role}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.role === "admin" ? "bg-purple-100 text-purple-700" :
+                          u.role === "sender" ? "bg-blue-100 text-blue-700" :
+                            "bg-gray-100 text-gray-600"
+                        }`}>{u.role}</span>
                       {u.is_active
                         ? <CheckCircle size={12} className="text-green-500" />
-                        : <XCircle    size={12} className="text-red-400"   />
+                        : <XCircle size={12} className="text-red-400" />
                       }
                     </div>
                   </div>

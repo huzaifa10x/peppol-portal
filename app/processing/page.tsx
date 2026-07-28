@@ -10,14 +10,14 @@ import {
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
 export default function ProcessingPage() {
-  const [stats, setStats]         = useState<TenantStats | null>(null);
-  const [syncing, setSyncing]     = useState(false);
+  const [stats, setStats] = useState<TenantStats | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<any>(null);
-  const [file, setFile]           = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [validating, setValidating] = useState(false);
   const [valResult, setValResult] = useState<any>(null);
   const [pipelineRunning, setPipelineRunning] = useState(false);
-  const [pipelineResult, setPipelineResult]   = useState<any>(null);
+  const [pipelineResult, setPipelineResult] = useState<any>(null);
 
   const load = async () => {
     const s = await tenantApi.stats().catch(() => null);
@@ -28,7 +28,7 @@ export default function ProcessingPage() {
 
   const syncInbox = async () => {
     setSyncing(true); setSyncResult(null);
-    const r = await fetch(`${BASE}/sync/inbox`, { method: "POST" })
+    const r = await fetch(`${BASE}/sync/inbox`, { method: "POST", credentials: "include" })
       .then(r => r.json()).catch(() => null);
     setSyncResult(r);
     await load();
@@ -37,7 +37,7 @@ export default function ProcessingPage() {
 
   const runPipeline = async () => {
     setPipelineRunning(true); setPipelineResult(null);
-    const r = await fetch(`${BASE}/sync/full-pipeline`, { method: "POST" })
+    const r = await fetch(`${BASE}/sync/full-pipeline`, { method: "POST", credentials: "include" })
       .then(r => r.json()).catch(() => null);
     setPipelineResult(r);
     await load();
@@ -49,7 +49,7 @@ export default function ProcessingPage() {
     setValidating(true); setValResult(null);
     const form = new FormData();
     form.append("file", file);
-    const r = await fetch(`${BASE}/validate`, { method: "POST", body: form })
+    const r = await fetch(`${BASE}/validate`, { method: "POST", body: form, credentials: "include" })
       .then(r => r.json()).catch(() => null);
     setValResult(r);
     setValidating(false);
@@ -111,7 +111,7 @@ export default function ProcessingPage() {
       <div className="grid grid-cols-5 gap-3 mb-8">
         {stages.map((s, i) => {
           const Icon = s.icon;
-          const pct  = stats?.inbound
+          const pct = stats?.inbound
             ? Math.round((s.count / stats.inbound) * 100)
             : 0;
           return (
@@ -142,9 +142,9 @@ export default function ProcessingPage() {
       {(stats?.outbound ?? 0) > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
-            { label: "Outbound Sent",   value: stats?.outbound_sent ?? 0,   color: "text-green-600",  bg: "bg-green-50",  border: "border-green-200" },
-            { label: "Send Failed",     value: stats?.outbound_failed ?? 0, color: "text-red-600",    bg: "bg-red-50",    border: "border-red-200" },
-            { label: "Draft / Pending", value: stats?.outbound_draft ?? 0,  color: "text-gray-600",   bg: "bg-gray-50",   border: "border-gray-200" },
+            { label: "Outbound Sent", value: stats?.outbound_sent ?? 0, color: "text-green-600", bg: "bg-green-50", border: "border-green-200" },
+            { label: "Send Failed", value: stats?.outbound_failed ?? 0, color: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
+            { label: "Draft / Pending", value: stats?.outbound_draft ?? 0, color: "text-gray-600", bg: "bg-gray-50", border: "border-gray-200" },
           ].map(({ label, value, color, bg, border }) => (
             <div key={label} className={`rounded-xl border ${border} ${bg} p-4`}>
               <div className={`text-2xl font-bold ${color} mb-1`}>{value}</div>
@@ -213,11 +213,10 @@ export default function ProcessingPage() {
             {validating ? "Validating..." : "Validate"}
           </button>
           {valResult && (
-            <div className={`mt-3 p-3 rounded-lg border text-xs ${
-              valResult.valid
+            <div className={`mt-3 p-3 rounded-lg border text-xs ${valResult.valid
                 ? "bg-green-50 border-green-200 text-green-700"
                 : "bg-red-50 border-red-200 text-red-700"
-            }`}>
+              }`}>
               <div className="font-medium mb-1">
                 {valResult.valid ? "✓ Valid" : `✗ ${valResult.error_count} error(s)`}
               </div>
@@ -245,17 +244,17 @@ export default function ProcessingPage() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {[
-              ["Received (inbound)",     stats?.inbound,           stats?.inbound,     "All received via Peppol AS4"],
-              ["Billing participant",    stats?.billing,           stats?.inbound,     "Participant 0235:pae001045"],
-              ["Self-billing",          stats?.selfbilling,        stats?.inbound,     "Participant 0235:2222"],
-              ["Invoices",              stats?.invoices,           stats?.inbound,     "Type codes 380/389"],
-              ["Credit Notes",          stats?.credit_notes,       stats?.inbound,     "Type codes 381/261"],
-              ["Validated",             stats?.validated,          stats?.inbound,     "Passed PINT-AE schematron"],
-              ["TDDs Generated",        stats?.tdds_generated,     stats?.inbound,     "Tax Data Documents created"],
-              ["TDDs Sent to FTA",      stats?.tdds_sent,          stats?.inbound,     "Delivered to UAE C5"],
-              ["MLS Acknowledged",      stats?.mls_acknowledged,   stats?.inbound,     "MLS AP response sent"],
-              ["Outbound Sent",         stats?.outbound_sent,      stats?.outbound,    "Successfully sent outbound"],
-              ["Outbound Failed",       stats?.outbound_failed,    stats?.outbound,    "Failed to send"],
+              ["Received (inbound)", stats?.inbound, stats?.inbound, "All received via Peppol AS4"],
+              ["Billing participant", stats?.billing, stats?.inbound, "Participant 0235:pae001045"],
+              ["Self-billing", stats?.selfbilling, stats?.inbound, "Participant 0235:2222"],
+              ["Invoices", stats?.invoices, stats?.inbound, "Type codes 380/389"],
+              ["Credit Notes", stats?.credit_notes, stats?.inbound, "Type codes 381/261"],
+              ["Validated", stats?.validated, stats?.inbound, "Passed PINT-AE schematron"],
+              ["TDDs Generated", stats?.tdds_generated, stats?.inbound, "Tax Data Documents created"],
+              ["TDDs Sent to FTA", stats?.tdds_sent, stats?.inbound, "Delivered to UAE C5"],
+              ["MLS Acknowledged", stats?.mls_acknowledged, stats?.inbound, "MLS AP response sent"],
+              ["Outbound Sent", stats?.outbound_sent, stats?.outbound, "Successfully sent outbound"],
+              ["Outbound Failed", stats?.outbound_failed, stats?.outbound, "Failed to send"],
             ].map(([label, value, base, note]) => {
               const pct = base && (base as number) > 0
                 ? Math.round(((value as number) / (base as number)) * 100)

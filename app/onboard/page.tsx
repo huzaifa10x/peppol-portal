@@ -26,7 +26,7 @@ interface EntityData {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function isValidTIN(v: string)   { return /^1\d{9}$/.test(v.trim()); }
+function isValidTIN(v: string) { return /^1\d{9}$/.test(v.trim()); }
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
@@ -53,27 +53,27 @@ function OnboardInner() {
   const searchParams = useSearchParams();
 
   // URL state
-  const [authcode, setAuthcode]       = useState("");
-  const [tinFromUrl, setTinFromUrl]   = useState(""); // non-empty = reverify/offboard mode
+  const [authcode, setAuthcode] = useState("");
+  const [tinFromUrl, setTinFromUrl] = useState(""); // non-empty = reverify/offboard mode
 
   // Form state
-  const [action, setAction]           = useState<Action>(1);
-  const [stage, setStage]             = useState<Stage>("form");
-  const [email, setEmail]             = useState("");
-  const [tin, setTin]                 = useState("");
-  const [mobile, setMobile]           = useState("");
+  const [action, setAction] = useState<Action>(1);
+  const [stage, setStage] = useState<Stage>("form");
+  const [email, setEmail] = useState("");
+  const [tin, setTin] = useState("");
+  const [mobile, setMobile] = useState("");
   const [countryCode, setCountryCode] = useState("+971");
 
   // Result state
-  const [entityData, setEntityData]   = useState<EntityData | null>(null);
-  const [declared, setDeclared]       = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState("");
+  const [entityData, setEntityData] = useState<EntityData | null>(null);
+  const [declared, setDeclared] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // ── On mount: capture URL params then strip them ──────────────────────────
   useEffect(() => {
     const ac = searchParams.get("authcode") || "";
-    const t  = searchParams.get("TIN")      || "";
+    const t = searchParams.get("TIN") || "";
     setAuthcode(ac);
     setTinFromUrl(t);
     if (t) {
@@ -98,10 +98,11 @@ function OnboardInner() {
       const res = await fetch(`${API}/fta/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          tin:      isOnboarding ? tin.trim() : tinFromUrl,
-          email:    email.trim(),
-          mobile:   mobile ? `${countryCode}${mobile}` : "",
+          tin: isOnboarding ? tin.trim() : tinFromUrl,
+          email: email.trim(),
+          mobile: mobile ? `${countryCode}${mobile}` : "",
           authcode,
           action,
         }),
@@ -128,21 +129,22 @@ function OnboardInner() {
       const res = await fetch(`${API}/fta/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          tin:          entityData.TIN,
-          email:        entityData.email,
-          mobile:       entityData.mobile,
+          tin: entityData.TIN,
+          email: entityData.email,
+          mobile: entityData.mobile,
           authcode,
           entityNameEn: entityData.entityNameEn,
           entityNameAr: entityData.entityNameAr,
-          vatTrn:       entityData.vatTrn,
-          effectiveDate:entityData.effectiveDate,
-          legalType:    entityData.legalType,
+          vatTrn: entityData.vatTrn,
+          effectiveDate: entityData.effectiveDate,
+          legalType: entityData.legalType,
           action,
           reason:
             action === 3 ? "Taxpayer offboarding request"
-            : action === 2 ? "Reverification request"
-            : "New onboarding",
+              : action === 2 ? "Reverification request"
+                : "New onboarding",
         }),
       });
       const data = await res.json();
@@ -157,10 +159,10 @@ function OnboardInner() {
     setLoading(false);
   };
 
-  const actionLabel  = action === 3 ? "Offboard" : action === 2 ? "Reverify" : "Onboard";
+  const actionLabel = action === 3 ? "Offboard" : action === 2 ? "Reverify" : "Onboard";
   const actionBtnCls =
     action === 3 ? "bg-red-600 hover:bg-red-700"
-    : "bg-[#7C01ED] hover:bg-[#7C01ED]";
+      : "bg-[#7C01ED] hover:bg-[#7C01ED]";
 
   // ────────────────────────────────────────────────────────────────────────────
   // SUCCESS
@@ -179,8 +181,8 @@ function OnboardInner() {
           </div>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">
             {action === 3 ? "Offboarded Successfully"
-             : action === 2 ? "Reverified Successfully"
-             : "Onboarded Successfully"}
+              : action === 2 ? "Reverified Successfully"
+                : "Onboarded Successfully"}
           </h2>
           <p className="text-sm text-gray-500 mb-6">{msg}</p>
           <p className="text-xs text-gray-400">
@@ -211,8 +213,8 @@ function OnboardInner() {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
               Applicant Details
             </p>
-            <ReadField label="Registered Email"         value={entityData.email}   icon={Mail} />
-            <ReadField label="TIN (Tax Identifier)"     value={entityData.TIN}     icon={Hash} />
+            <ReadField label="Registered Email" value={entityData.email} icon={Mail} />
+            <ReadField label="TIN (Tax Identifier)" value={entityData.TIN} icon={Hash} />
             {entityData.mobile && (
               <ReadField label="Mobile" value={entityData.mobile} icon={Phone} />
             )}
@@ -221,13 +223,13 @@ function OnboardInner() {
               Entity Details
             </p>
             {entityData.legalType && (
-              <ReadField label="Legal Type"               value={entityData.legalType}   icon={Building2} />
+              <ReadField label="Legal Type" value={entityData.legalType} icon={Building2} />
             )}
-            <ReadField label="Entity Legal Name (EN)"   value={entityData.entityNameEn} icon={Building2} />
+            <ReadField label="Entity Legal Name (EN)" value={entityData.entityNameEn} icon={Building2} />
             {entityData.entityNameAr && (
-              <ReadField label="Entity Legal Name (AR)"  value={entityData.entityNameAr} />
+              <ReadField label="Entity Legal Name (AR)" value={entityData.entityNameAr} />
             )}
-            <ReadField label="VAT TRN"                  value={entityData.vatTrn}       icon={Hash} />
+            <ReadField label="VAT TRN" value={entityData.vatTrn} icon={Hash} />
             <ReadField
               label="Effective Date of Registration"
               value={entityData.effectiveDate}
@@ -316,11 +318,10 @@ function OnboardInner() {
                 ].map(opt => (
                   <label
                     key={opt.value}
-                    className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${
-                      action === opt.value
+                    className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${action === opt.value
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-200 hover:border-gray-300"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio" name="action" value={opt.value}
@@ -350,11 +351,10 @@ function OnboardInner() {
               type="email" value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="admin@yourcompany.com"
-              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                email && !isValidEmail(email)
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${email && !isValidEmail(email)
                   ? "border-red-300 bg-red-50"
                   : "border-gray-200"
-              }`}
+                }`}
             />
             {email && !isValidEmail(email) && (
               <p className="text-xs text-red-500 mt-0.5">Please enter a valid email address</p>
@@ -373,13 +373,12 @@ function OnboardInner() {
               readOnly={!isOnboarding}
               placeholder="1000000000"
               maxLength={10}
-              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none ${
-                !isOnboarding
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none ${!isOnboarding
                   ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
                   : tin && !isValidTIN(tin)
                     ? "border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500"
                     : "border-gray-200 focus:ring-2 focus:ring-blue-500"
-              }`}
+                }`}
             />
             {isOnboarding && tin && !isValidTIN(tin) && (
               <p className="text-xs text-red-500 mt-0.5">

@@ -55,7 +55,7 @@ export default function FTAOnboardingsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${BASE}/fta/onboardings`).then(r => r.json());
+      const r = await fetch(`${BASE}/fta/onboardings`, { credentials: "include" }).then(r => r.json());
       setRows(r.onboardings ?? []);
     } catch {
       setRows([]);
@@ -223,8 +223,8 @@ export default function FTAOnboardingsPage() {
                 {/* Action */}
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${row.action === 1 ? "bg-blue-100 text-blue-700" :
-                      row.action === 2 ? "bg-amber-100 text-amber-700" :
-                        "bg-red-100 text-red-700"
+                    row.action === 2 ? "bg-amber-100 text-amber-700" :
+                      "bg-red-100 text-red-700"
                     }`}>
                     {row.action_label}
                   </span>
@@ -233,8 +233,8 @@ export default function FTAOnboardingsPage() {
                 {/* Status */}
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${row.status === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-500"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-500"
                     }`}>
                     {row.status}
                   </span>

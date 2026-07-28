@@ -10,27 +10,28 @@ export default function MFASetupPage() {
   const userId = (session?.user as any)?.id;
   const userEmail = session?.user?.email;
 
-  const [status, setStatus]     = useState<any>(null);
-  const [setup, setSetup]       = useState<any>(null);
-  const [code, setCode]         = useState("");
+  const [status, setStatus] = useState<any>(null);
+  const [setup, setSetup] = useState<any>(null);
+  const [code, setCode] = useState("");
   const [verified, setVerified] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [copied, setCopied]     = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`${BASE}/auth/mfa/status/${userId}`)
+    fetch(`${BASE}/auth/mfa/status/${userId}`, { credentials: "include" })
       .then(r => r.json())
       .then(setStatus)
-      .catch(() => {});
+      .catch(() => { });
   }, [userId]);
 
   const startSetup = async () => {
     setLoading(true);
     const r = await fetch(`${BASE}/auth/mfa/setup`, {
-      method:  "POST",
+      method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ user_id: userId, email: userEmail }),
+      body: JSON.stringify({ user_id: userId, email: userEmail }),
     }).then(r => r.json());
     setSetup(r);
     setLoading(false);
@@ -39,9 +40,10 @@ export default function MFASetupPage() {
   const verifySetup = async () => {
     setLoading(true);
     const r = await fetch(`${BASE}/auth/mfa/verify-setup`, {
-      method:  "POST",
+      method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ user_id: userId, email: userEmail, code }),
+      body: JSON.stringify({ user_id: userId, email: userEmail, code }),
     }).then(r => r.json());
     if (r.verified) {
       setVerified(true);
@@ -53,9 +55,10 @@ export default function MFASetupPage() {
   const disableMFA = async () => {
     if (!confirm("Disable MFA? This reduces account security.")) return;
     await fetch(`${BASE}/auth/mfa/disable`, {
-      method:  "POST",
+      method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ user_id: userId, email: userEmail }),
+      body: JSON.stringify({ user_id: userId, email: userEmail }),
     });
     setStatus({ totp_enabled: false });
     setSetup(null);
@@ -78,14 +81,12 @@ export default function MFASetupPage() {
       </p>
 
       {/* Current status */}
-      <div className={`rounded-xl border p-5 mb-6 flex items-center gap-4 ${
-        status?.totp_enabled
-          ? "bg-green-50 border-green-200"
-          : "bg-gray-50 border-gray-200"
-      }`}>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-          status?.totp_enabled ? "bg-green-100" : "bg-gray-100"
+      <div className={`rounded-xl border p-5 mb-6 flex items-center gap-4 ${status?.totp_enabled
+        ? "bg-green-50 border-green-200"
+        : "bg-gray-50 border-gray-200"
         }`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status?.totp_enabled ? "bg-green-100" : "bg-gray-100"
+          }`}>
           <Shield size={18} className={status?.totp_enabled ? "text-green-600" : "text-gray-400"} />
         </div>
         <div className="flex-1">
@@ -131,7 +132,7 @@ export default function MFASetupPage() {
           </div>
           <button onClick={startSetup} disabled={loading}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
-            <Smartphone size={14}/>
+            <Smartphone size={14} />
             {loading ? "Generating..." : "Set Up MFA"}
           </button>
         </div>
@@ -169,7 +170,7 @@ export default function MFASetupPage() {
               </code>
               <button onClick={copySecret}
                 className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200">
-                {copied ? <CheckCircle size={14} className="text-green-500"/> : <Copy size={14} className="text-gray-400"/>}
+                {copied ? <CheckCircle size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
               </button>
             </div>
           </div>
@@ -183,7 +184,7 @@ export default function MFASetupPage() {
             </p>
             <div className="flex gap-3">
               <input type="text" value={code} maxLength={6}
-                onChange={e => setCode(e.target.value.replace(/\D/g,"").slice(0,6))}
+                onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="000000"
                 className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-xl font-mono text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <button onClick={verifySetup} disabled={loading || code.length !== 6}
@@ -196,7 +197,7 @@ export default function MFASetupPage() {
           {/* Backup codes */}
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle size={14} className="text-amber-600"/>
+              <AlertTriangle size={14} className="text-amber-600" />
               <span className="text-xs font-semibold text-amber-700">
                 Save These Backup Codes
               </span>
@@ -218,7 +219,7 @@ export default function MFASetupPage() {
       {/* Success */}
       {(verified || status?.totp_enabled) && setup && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-5 flex items-center gap-3">
-          <CheckCircle size={20} className="text-green-600 shrink-0"/>
+          <CheckCircle size={20} className="text-green-600 shrink-0" />
           <div>
             <div className="text-sm font-semibold text-green-800">
               MFA Successfully Enabled

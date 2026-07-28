@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import { 
-  Bell, X, CheckCircle, AlertTriangle, 
-  Info, Shield, Send, FileText, RefreshCw 
+import {
+  Bell, X, CheckCircle, AlertTriangle,
+  Info, Shield, Send, FileText, RefreshCw
 } from "lucide-react";
 
 
@@ -32,19 +32,19 @@ interface Summary {
 }
 
 const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
-  new_document:  { icon: FileText,       color: "text-blue-600",   bg: "bg-blue-50",   label: "New Invoice"     },
-  tdd_generated: { icon: Shield,         color: "text-purple-600", bg: "bg-purple-50", label: "TDD Generated"   },
-  tdd_sent:      { icon: Shield,         color: "text-teal-600",   bg: "bg-teal-50",   label: "TDD Sent to FTA" },
-  send_failed:   { icon: AlertTriangle,  color: "text-red-500",    bg: "bg-red-50",    label: "Send Failed"     },
-  system_alert:  { icon: AlertTriangle,  color: "text-orange-500", bg: "bg-orange-50", label: "System Alert"    },
-  resend_failed: { icon: AlertTriangle,  color: "text-red-500",    bg: "bg-red-50",    label: "Resend Failed"   },
-  default:       { icon: Info,           color: "text-gray-500",   bg: "bg-gray-50",   label: "Notification"    },
+  new_document: { icon: FileText, color: "text-blue-600", bg: "bg-blue-50", label: "New Invoice" },
+  tdd_generated: { icon: Shield, color: "text-purple-600", bg: "bg-purple-50", label: "TDD Generated" },
+  tdd_sent: { icon: Shield, color: "text-teal-600", bg: "bg-teal-50", label: "TDD Sent to FTA" },
+  send_failed: { icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50", label: "Send Failed" },
+  system_alert: { icon: AlertTriangle, color: "text-orange-500", bg: "bg-orange-50", label: "System Alert" },
+  resend_failed: { icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50", label: "Resend Failed" },
+  default: { icon: Info, color: "text-gray-500", bg: "bg-gray-50", label: "Notification" },
 };
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return "just now";
+  if (m < 1) return "just now";
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
@@ -52,16 +52,16 @@ function timeAgo(iso: string) {
 }
 
 export default function NotificationCenter() {
-  const [open, setOpen]         = useState(false);
-  const [filter, setFilter]     = useState("all");
-  const [notifs, setNotifs]     = useState<Notification[]>([]);
-  const [summary, setSummary]   = useState<Summary | null>(null);
-  const [syncing, setSyncing]   = useState(false);
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     const [n, s] = await Promise.all([
-      fetch(`${BASE}/notifications?limit=50`).then(r => r.json()).catch(() => ({ notifications: [] })),
-      fetch(`${BASE}/notifications/summary`).then(r => r.json()).catch(() => null),
+      fetch(`${BASE}/notifications?limit=50`, { credentials: "include" }).then(r => r.json()).catch(() => ({ notifications: [] })),
+      fetch(`${BASE}/notifications/summary`, { credentials: "include" }).then(r => r.json()).catch(() => null),
     ]);
     setNotifs(n.notifications ?? []);
     setSummary(s);
@@ -74,27 +74,27 @@ export default function NotificationCenter() {
   }, []);
 
   const markRead = async (id: string) => {
-    await fetch(`${BASE}/notifications/${id}/read`, { method: "POST" });
+    await fetch(`${BASE}/notifications/${id}/read`, { method: "POST", credentials: "include" });
     setNotifs(n => n.map(x => x.id === id ? { ...x, read: true } : x));
     setSummary(s => s ? { ...s, unread: Math.max(0, s.unread - 1) } : s);
   };
 
   const markAllRead = async () => {
-    await fetch(`${BASE}/notifications/mark-all-read`, { method: "POST" });
+    await fetch(`${BASE}/notifications/mark-all-read`, { method: "POST", credentials: "include" });
     setNotifs(n => n.map(x => ({ ...x, read: true })));
     setSummary(s => s ? { ...s, unread: 0 } : s);
   };
 
   const clearRead = async () => {
-    await fetch(`${BASE}/notifications/clear`, { method: "DELETE" });
+    await fetch(`${BASE}/notifications/clear`, { method: "DELETE", credentials: "include" });
     setNotifs(n => n.filter(x => !x.read));
     load();
   };
 
   const runSync = async () => {
     setSyncing(true);
-    await fetch(`${BASE}/sync/full-pipeline`, { method: "POST" });
-    await fetch(`${BASE}/sync/notify-new-inbound`, { method: "POST" });
+    await fetch(`${BASE}/sync/full-pipeline`, { method: "POST", credentials: "include" });
+    await fetch(`${BASE}/sync/notify-new-inbound`, { method: "POST", credentials: "include" });
     await load();
     setSyncing(false);
   };
@@ -159,18 +159,17 @@ export default function NotificationCenter() {
               {summary && (
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { key: "all",          label: "All",         count: summary.total },
-                    { key: "new_document", label: "Inbound",     count: summary.new_documents },
-                    { key: "tdd_sent",     label: "TDD",         count: summary.tdd_sent + summary.tdd_generated },
-                    { key: "send_failed",  label: "Failures",    count: summary.send_failed },
-                    { key: "system_alert", label: "System",      count: summary.system_alerts },
+                    { key: "all", label: "All", count: summary.total },
+                    { key: "new_document", label: "Inbound", count: summary.new_documents },
+                    { key: "tdd_sent", label: "TDD", count: summary.tdd_sent + summary.tdd_generated },
+                    { key: "send_failed", label: "Failures", count: summary.send_failed },
+                    { key: "system_alert", label: "System", count: summary.system_alerts },
                   ].map(({ key, label, count }) => (
                     <button key={key} onClick={() => setFilter(key)}
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                        filter === key
-                          ? "bg-[#7C01ED] text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}>
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${filter === key
+                        ? "bg-[#7C01ED] text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}>
                       {label}
                       {count > 0 && (
                         <span className={`ml-1 ${filter === key ? "opacity-75" : "text-gray-400"}`}>
@@ -196,9 +195,8 @@ export default function NotificationCenter() {
                 return (
                   <div key={n.id}
                     onClick={() => !n.read && markRead(n.id)}
-                    className={`flex gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${
-                      !n.read ? "bg-blue-50/50 cursor-pointer hover:bg-blue-50" : "hover:bg-gray-50"
-                    }`}>
+                    className={`flex gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${!n.read ? "bg-blue-50/50 cursor-pointer hover:bg-blue-50" : "hover:bg-gray-50"
+                      }`}>
                     <div className={`w-8 h-8 rounded-full ${cfg.bg} flex items-center justify-center shrink-0 mt-0.5`}>
                       <Icon size={14} className={cfg.color} />
                     </div>

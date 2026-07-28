@@ -9,15 +9,15 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const tenantId = (session?.user as any)?.tenant_id ?? "";
-  const [email, setEmail]     = useState("");
-  const [saved, setSaved]     = useState(false);
+  const [email, setEmail] = useState("");
+  const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!tenantId) return;
-    fetch(`${BASE}/email/preferences/${tenantId}`)
+    fetch(`${BASE}/email/preferences/${tenantId}`, { credentials: "include" })
       .then(r => r.json())
       .then(d => { setEmail(d.notification_email ?? ""); setLoading(false); })
       .catch(() => setLoading(false));
@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const save = async () => {
     await fetch(`${BASE}/email/preferences/${tenantId}`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notification_email: email }),
     });
@@ -37,6 +38,7 @@ export default function SettingsPage() {
     setTesting(true); setTestResult(null);
     const r = await fetch(`${BASE}/email/test`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ to: email }),
     }).then(r => r.json()).catch(() => null);
@@ -52,7 +54,7 @@ export default function SettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-5">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
-            <Mail size={16} className="text-blue-600"/>
+            <Mail size={16} className="text-blue-600" />
           </div>
           <div>
             <div className="text-sm font-semibold text-gray-800">Email Notifications</div>
@@ -81,25 +83,24 @@ export default function SettingsPage() {
             <button onClick={save} disabled={!email || loading}
               className="flex items-center gap-2 px-4 py-2.5 bg-[#7C01ED] text-white rounded-xl text-sm font-medium hover:bg-[#7C01ED] disabled:opacity-50">
               {saved
-                ? <><CheckCircle size={14}/> Saved!</>
+                ? <><CheckCircle size={14} /> Saved!</>
                 : "Save Preferences"
               }
             </button>
             <button onClick={sendTest} disabled={!email || testing}
               className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-              <Send size={14} className={testing ? "animate-pulse" : ""}/>
+              <Send size={14} className={testing ? "animate-pulse" : ""} />
               {testing ? "Sending..." : "Send Test Email"}
             </button>
           </div>
 
           {testResult !== null && (
-            <div className={`flex items-center gap-2 text-sm p-3 rounded-lg ${
-              testResult
-                ? "bg-green-50 border border-green-200 text-green-700"
-                : "bg-red-50 border border-red-200 text-red-600"
-            }`}>
+            <div className={`flex items-center gap-2 text-sm p-3 rounded-lg ${testResult
+              ? "bg-green-50 border border-green-200 text-green-700"
+              : "bg-red-50 border border-red-200 text-red-600"
+              }`}>
               {testResult
-                ? <><CheckCircle size={14}/> Test email sent successfully — check your inbox</>
+                ? <><CheckCircle size={14} /> Test email sent successfully — check your inbox</>
                 : <>❌ Failed to send — check SMTP configuration</>
               }
             </div>
@@ -111,7 +112,7 @@ export default function SettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
-            <Bell size={16} className="text-purple-600"/>
+            <Bell size={16} className="text-purple-600" />
           </div>
           <div>
             <div className="text-sm font-semibold text-gray-800">Notification Types</div>
@@ -120,10 +121,10 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-3">
           {[
-            { label: "New Invoice Received",  desc: "When a new PINT-AE invoice arrives via Peppol",      on: true,  color: "bg-blue-100 text-blue-700" },
-            { label: "Invoice Send Failed",   desc: "When an outbound invoice fails to deliver",           on: true,  color: "bg-red-100 text-red-700" },
-            { label: "TDD Sent to UAE FTA",   desc: "When a Tax Data Document is delivered to C5",         on: true,  color: "bg-purple-100 text-purple-700" },
-            { label: "System Alert",          desc: "When MLS watcher stops or container is unhealthy",    on: true,  color: "bg-amber-100 text-amber-700" },
+            { label: "New Invoice Received", desc: "When a new PINT-AE invoice arrives via Peppol", on: true, color: "bg-blue-100 text-blue-700" },
+            { label: "Invoice Send Failed", desc: "When an outbound invoice fails to deliver", on: true, color: "bg-red-100 text-red-700" },
+            { label: "TDD Sent to UAE FTA", desc: "When a Tax Data Document is delivered to C5", on: true, color: "bg-purple-100 text-purple-700" },
+            { label: "System Alert", desc: "When MLS watcher stops or container is unhealthy", on: true, color: "bg-amber-100 text-amber-700" },
           ].map(({ label, desc, on, color }) => (
             <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
               <div>
@@ -142,7 +143,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center">
-              <Shield size={16} className="text-green-600"/>
+              <Shield size={16} className="text-green-600" />
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-800">Two-Factor Authentication</div>

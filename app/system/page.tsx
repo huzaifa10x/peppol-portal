@@ -11,12 +11,12 @@ interface ScriptStatus {
 }
 
 export default function SystemPage() {
-  const [health, setHealth]         = useState<HealthResponse | null>(null);
-  const [logs, setLogs]             = useState("");
-  const [loading, setLoading]       = useState(true);
-  const [starting, setStarting]     = useState(false);
-  const [restoring, setRestoring]   = useState(false);
-  const [scripts, setScripts]       = useState<ScriptStatus | null>(null);
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [logs, setLogs] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [scripts, setScripts] = useState<ScriptStatus | null>(null);
   const [restoreResult, setRestoreResult] = useState<Record<string, string> | null>(null);
 
   const load = async () => {
@@ -24,7 +24,7 @@ export default function SystemPage() {
     const [h, l, s] = await Promise.all([
       api.health(),
       api.oxalisLogs(80),
-      fetch(`${BASE}/admin/script-status`).then(r => r.json()).catch(() => null),
+      fetch(`${BASE}/admin/script-status`, { credentials: "include" }).then(r => r.json()).catch(() => null),
     ]);
     setHealth(h);
     setLogs(l.log);
@@ -42,7 +42,7 @@ export default function SystemPage() {
   const restoreScripts = async () => {
     setRestoring(true);
     setRestoreResult(null);
-    const r = await fetch(`${BASE}/admin/restore-scripts`, { method: "POST" })
+    const r = await fetch(`${BASE}/admin/restore-scripts`, { method: "POST", credentials: "include", })
       .then(res => res.json()).catch(() => null);
     setRestoreResult(r?.restored ?? null);
     await load();
@@ -167,11 +167,10 @@ export default function SystemPage() {
                 {Object.entries(scripts.scripts).map(([script, status]) => (
                   <div key={script} className="flex items-center justify-between">
                     <span className="text-xs font-mono text-gray-600">{script}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      status === "present"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}>{status}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status === "present"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}>{status}</span>
                   </div>
                 ))}
               </div>
@@ -183,15 +182,15 @@ export default function SystemPage() {
             <h2 className="text-sm font-semibold text-gray-700 mb-3">System Info</h2>
             <div className="space-y-2 text-xs">
               {[
-                ["Seat ID",       "PAE001045"],
-                ["Organisation",  "KASA Advisory Service FZE"],
-                ["Jurisdiction",  "United Arab Emirates"],
-                ["AP Endpoint",   "ap.kasaadvisory.com/as4"],
-                ["API",           "api.kasaadvisory.com"],
-                ["SMP",           "smp.kasaadvisory.com"],
-                ["Software",      "Oxalis-NG 1.2.0"],
-                ["Certificate",   "Expires 2028-03-04"],
-                ["Last check",    health?.timestamp ? new Date(health.timestamp).toLocaleString() : "—"],
+                ["Seat ID", "PAE001045"],
+                ["Organisation", "KASA Advisory Service FZE"],
+                ["Jurisdiction", "United Arab Emirates"],
+                ["AP Endpoint", "ap.kasaadvisory.com/as4"],
+                ["API", "api.kasaadvisory.com"],
+                ["SMP", "smp.kasaadvisory.com"],
+                ["Software", "Oxalis-NG 1.2.0"],
+                ["Certificate", "Expires 2028-03-04"],
+                ["Last check", health?.timestamp ? new Date(health.timestamp).toLocaleString() : "—"],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
                   <span className="text-gray-400 shrink-0">{k}</span>
