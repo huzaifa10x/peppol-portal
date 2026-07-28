@@ -112,7 +112,7 @@ export default function NotificationCenter() {
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
         <Bell size={16} className="text-gray-500" />
         {unread > 0 && (
-          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+          <span className="absolute top-1 -left-4 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
             {unread > 99 ? "99+" : unread}
           </span>
         )}

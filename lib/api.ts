@@ -1,8 +1,16 @@
-
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
+// ── Core fetch wrappers — credentials: "include" on every call ───────────────
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { cache: "no-store" });
+  const res = await fetch(`${BASE}${path}`, {
+    cache: "no-store",
+    credentials: "include",          // ← sends httpOnly cookie cross-origin
+  });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Session expired");
+  }
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
   return res.json();
 }
@@ -10,20 +18,48 @@ async function get<T>(path: string): Promise<T> {
 async function post<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
+    credentials: "include",          // ← sends httpOnly cookie cross-origin
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Session expired");
+  }
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
   return res.json();
 }
 
 async function postForm<T>(path: string, form: FormData): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { method: "POST", body: form });
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    credentials: "include",          // ← sends httpOnly cookie cross-origin
+    body: form,
+  });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Session expired");
+  }
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
   return res.json();
 }
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── DELETE helper (missing from your current api.ts) ─────────────────────────
+
+async function del<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Session expired");
+  }
+  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
+  return res.json();
+}
+
+// ── Everything below is unchanged from your existing file ────────────────────
 
 export interface HealthResponse {
   status: string;
@@ -79,24 +115,20 @@ export interface SmpResponse {
   participants: Participant[];
 }
 
-// ── API calls ────────────────────────────────────────────────────────────────
-
 export const api = {
-  health:       ()                        => get<HealthResponse>("/health"),
-  startWatcher: ()                        => post("/health/start-mls-watcher"),
+  health:       ()                       => get<HealthResponse>("/health"),
+  startWatcher: ()                       => post("/health/start-mls-watcher"),
   inbox:        (participant?: string, limit = 50) =>
     get<InboxResponse>(`/inbox?${participant ? `participant=${participant}&` : ""}limit=${limit}`),
-  document:     (id: string)              => get<{ path: string; content: string }>(`/inbox/${id}`),
-  validate:     (file: File)              => { const f = new FormData(); f.append("file", file); return postForm<ValidationResult>("/validate", f); },
-  send:         (document_type: string)   => post<SendResult>("/send", { document_type }),
-  sendRaw:      (file: File)              => { const f = new FormData(); f.append("file", file); return postForm<SendResult>("/send/raw", f); },
-  tdds:         ()                        => get<TddResponse>("/tdds"),
-  mlsLog:       (lines = 100)             => get<{ log: string }>(`/tdds/mls-log?lines=${lines}`),
-  smp:          ()                        => get<SmpResponse>("/smp/participants"),
-  oxalisLogs:   (lines = 100)             => get<{ log: string }>(`/logs/oxalis?lines=${lines}`),
+  document:     (id: string)             => get<{ path: string; content: string }>(`/inbox/${id}`),
+  validate:     (file: File)             => { const f = new FormData(); f.append("file", file); return postForm<ValidationResult>("/validate", f); },
+  send:         (document_type: string)  => post<SendResult>("/send", { document_type }),
+  sendRaw:      (file: File)             => { const f = new FormData(); f.append("file", file); return postForm<SendResult>("/send/raw", f); },
+  tdds:         ()                       => get<TddResponse>("/tdds"),
+  mlsLog:       (lines = 100)            => get<{ log: string }>(`/tdds/mls-log?lines=${lines}`),
+  smp:          ()                       => get<SmpResponse>("/smp/participants"),
+  oxalisLogs:   (lines = 100)            => get<{ log: string }>(`/logs/oxalis?lines=${lines}`),
 };
-
-// ── Database-backed endpoints ─────────────────────────────────────────────
 
 export interface DBDocument {
   id: string;
@@ -158,8 +190,8 @@ export interface Party {
 }
 
 export const dbApi = {
-  stats: () => get<DocStats>("/documents/stats"),
-  documents: (params?: {
+  stats:       () => get<DocStats>("/documents/stats"),
+  documents:   (params?: {
     direction?: string;
     participant_type?: string;
     doc_type?: string;
@@ -167,19 +199,17 @@ export const dbApi = {
     offset?: number;
   }) => {
     const q = new URLSearchParams();
-    if (params?.direction) q.set("direction", params.direction);
+    if (params?.direction)        q.set("direction", params.direction);
     if (params?.participant_type) q.set("participant_type", params.participant_type);
-    if (params?.doc_type) q.set("doc_type", params.doc_type);
-    if (params?.limit) q.set("limit", String(params.limit));
-    if (params?.offset) q.set("offset", String(params.offset));
+    if (params?.doc_type)         q.set("doc_type", params.doc_type);
+    if (params?.limit)            q.set("limit", String(params.limit));
+    if (params?.offset)           q.set("offset", String(params.offset));
     return get<DBDocumentsResponse>(`/documents?${q}`);
   },
-  sync: () => post<{ synced: number; skipped: number; errors: unknown[]; total: number }>("/sync/inbox"),
-  parties: () => get<{ total: number; parties: Party[] }>("/parties"),
+  sync:        () => post<{ synced: number; skipped: number; errors: unknown[]; total: number }>("/sync/inbox"),
+  parties:     () => get<{ total: number; parties: Party[] }>("/parties"),
   createParty: (data: Partial<Party>) => post<{ id: string; created: boolean }>("/parties", data),
 };
-
-// ── Tenant-scoped API ─────────────────────────────────────────────────────────
 
 export interface TenantStats {
   total: number;
@@ -240,16 +270,16 @@ export const tenantApi = {
     get<TenantStats>(`/tenant/stats${tenantId ? `?tenant_id=${tenantId}` : ""}`),
   documents:   (params: Record<string, string | number> = {}) => {
     const q = new URLSearchParams(
-      Object.fromEntries(Object.entries(params).map(([k,v]) => [k, String(v)]))
+      Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
     );
     return get<DBDocumentsResponse>(`/tenant/documents?${q}`);
   },
-  listTenants:  () => get<{ tenants: Tenant[] }>("/tenant/list"),
-  updateTenant: (id: string, data: Partial<Tenant>) =>
+  listTenants:    () => get<{ tenants: Tenant[] }>("/tenant/list"),
+  updateTenant:   (id: string, data: Partial<Tenant>) =>
     post<{ updated: boolean }>(`/tenant/${id}`, data),
-  addUser:      (tenantId: string, data: { email: string; name: string; password: string; role: string }) =>
+  addUser:        (tenantId: string, data: { email: string; name: string; password: string; role: string }) =>
     post<{ user_id: string; created: boolean }>(`/tenant/${tenantId}/add-user`, data),
-  users:        (tenantId: string) =>
+  users:          (tenantId: string) =>
     get<{ users: TenantUser[] }>(`/tenant/${tenantId}/users`),
   lookupReceiver: (peppolId: string) =>
     get<ReceiverLookup>(`/lookup/receiver/${encodeURIComponent(peppolId)}`),
@@ -257,6 +287,6 @@ export const tenantApi = {
     post<{ sent: boolean; status: string }>(`/invoices/${docId}/resend`),
   templates:      () => get<{ templates: DBDocument[] }>("/invoice-templates"),
   markAllRead:    () => post("/notifications/mark-all-read"),
-  clearRead:      () => fetch(`${BASE}/notifications/clear`, { method: "DELETE" }).then(r => r.json()),
+  clearRead:      () => del("/notifications/clear"),   // ← was raw fetch, now uses del()
   syncStatuses:   () => post("/sync/update-statuses"),
 };

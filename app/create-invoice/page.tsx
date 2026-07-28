@@ -51,13 +51,12 @@ function Steps({ current }: { current: number }) {
         return (
           <div key={s.n} className="flex items-center">
             <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                done
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : active
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${done
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : active
                   ? "bg-[#7C01ED] text-white shadow-xs"
                   : "bg-gray-50 text-gray-500 border border-gray-100"
-              }`}
+                }`}
             >
               {done ? <CheckCircle2 size={15} /> : <Icon size={15} />}
               <span>{s.label}</span>
@@ -80,6 +79,7 @@ function InputField({
   mono = false,
   required = false,
   type = "text",
+  isDisabled = false
 }: {
   label: string;
   value: string;
@@ -88,6 +88,7 @@ function InputField({
   mono?: boolean;
   required?: boolean;
   type?: string;
+  isDisabled?: boolean;
 }) {
   return (
     <div>
@@ -96,14 +97,14 @@ function InputField({
         {required && <span className="text-rose-600 ml-0.5">*</span>}
       </label>
       <input
+        disabled={isDisabled}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className={`w-full px-3.5 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C01ED] focus:border-transparent transition-all placeholder:text-gray-400 shadow-2xs ${
-          mono ? "font-mono" : ""
-        }`}
+        className={`w-full px-3.5 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C01ED] focus:border-transparent transition-all placeholder:text-gray-400 shadow-2xs ${mono ? "font-mono" : ""
+          }`}
       />
     </div>
   );
@@ -152,7 +153,7 @@ export default function CreateInvoicePage() {
     tenantApi
       .templates()
       .then((r) => setTemplates(r.templates))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const setField = (k: keyof typeof form, v: string) =>
@@ -272,11 +273,10 @@ export default function CreateInvoicePage() {
     return (
       <div className="p-6 max-w-lg mx-auto text-gray-900">
         <div
-          className={`rounded-2xl border p-8 text-center shadow-xs ${
-            sendResult.sent
-              ? "bg-emerald-50/50 border-emerald-200"
-              : "bg-rose-50/50 border-rose-200"
-          }`}
+          className={`rounded-2xl border p-8 text-center shadow-xs ${sendResult.sent
+            ? "bg-emerald-50/50 border-emerald-200"
+            : "bg-rose-50/50 border-rose-200"
+            }`}
         >
           {sendResult.sent ? (
             <CheckCircle2 size={48} className="text-emerald-600 mx-auto mb-4" />
@@ -398,11 +398,10 @@ export default function CreateInvoicePage() {
               <button
                 key={t.v}
                 onClick={() => setDocType(t.v)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  docType === t.v
-                    ? "bg-white text-gray-900 shadow-2xs"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${docType === t.v
+                  ? "bg-white text-gray-900 shadow-2xs"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
               >
                 {t.l}
               </button>
@@ -429,12 +428,14 @@ export default function CreateInvoicePage() {
               </div>
               <div className="space-y-4">
                 <InputField
+                  isDisabled={true}
                   label="Legal Name"
                   value={form.supplier_name}
                   onChange={(v) => setField("supplier_name", v)}
                   required
                 />
                 <InputField
+                  isDisabled={true}
                   label="Tax ID (TRN)"
                   value={form.supplier_tax_id}
                   onChange={(v) => setField("supplier_tax_id", v)}
@@ -443,6 +444,7 @@ export default function CreateInvoicePage() {
                   placeholder="100000000000003"
                 />
                 <InputField
+                  isDisabled={true}
                   label="City / Address"
                   value={form.supplier_address}
                   onChange={(v) => setField("supplier_address", v)}
@@ -505,11 +507,10 @@ export default function CreateInvoicePage() {
                   </div>
                   {receiverStatus && (
                     <div
-                      className={`mt-2 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
-                        receiverStatus.found
-                          ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
-                          : "bg-rose-50 border border-rose-200 text-rose-700"
-                      }`}
+                      className={`mt-2 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${receiverStatus.found
+                        ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                        : "bg-rose-50 border border-rose-200 text-rose-700"
+                        }`}
                     >
                       {receiverStatus.found ? (
                         <>
@@ -791,11 +792,10 @@ export default function CreateInvoicePage() {
 
             {validateResult && (
               <div
-                className={`mb-6 p-4 rounded-xl border ${
-                  validateResult.valid
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : "bg-rose-50 border-rose-200 text-rose-800"
-                }`}
+                className={`mb-6 p-4 rounded-xl border ${validateResult.valid
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-rose-50 border-rose-200 text-rose-800"
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {validateResult.valid ? (

@@ -86,9 +86,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           </div>
 
           <div>
-            <div className="text-[11px] font-bold tracking-wider text-[#7C01ED] uppercase">
+            {/* <div className="text-[11px] font-bold tracking-wider text-[#7C01ED] uppercase">
               PEPPOL PORTAL
-            </div>
+            </div> */}
             <div className="text-[11px] text-gray-500 truncate max-w-[180px]">
               {(session?.user as any)?.tenant_name ?? "KASA Advisory"} · PAE001045
             </div>
