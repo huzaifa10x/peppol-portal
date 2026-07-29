@@ -31,11 +31,11 @@ export default function Dashboard() {
   const [recentDocs, setRecent] = useState<any>(null);
 
   // Auth guard
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/login");
-    }
-  }, [status, router]);
+  // useEffect(() => {
+  //   if (status === "unauthenticated") {
+  //     router.replace("/login");
+  //   }
+  // }, [status, router]);
 
   useEffect(() => {
     if (!tenantId) return;
