@@ -255,37 +255,38 @@ export default function InvoiceDetailPage() {
       const res = await fetch(`${BASE}/receipts/document/${id}/as4-receipt`, {
         credentials: "include",
       });
+
       if (res.ok) {
         const xml = await res.text();
         const blob = new Blob([xml], { type: "application/xml" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${doc?.invoice_number ?? id}_AS4_NonRepudiationReceipt.xml`;
+        // Use Content-Disposition filename if available
+        const cd = res.headers.get("Content-Disposition") || "";
+        const match = cd.match(/filename="([^"]+)"/);
+        a.download = match?.[1] ?? `NRR_${doc?.invoice_number ?? id}_AS4_Receipt.xml`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
         return;
       }
-    } catch { }
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<AS4NonRepudiationReceipt>
-  <InvoiceNumber>${doc?.invoice_number ?? ""}</InvoiceNumber>
-  <C3MessageId>${c3?.message_id ?? ""}</C3MessageId>
-  <RefToMessageId>${c3?.ref_to_message_id ?? ""}</RefToMessageId>
-  <Timestamp>${c3?.timestamp ?? ""}</Timestamp>
-  <Protocol>AS4 / ebMS 3.0</Protocol>
-  <ReceiptType>ETSI REM DeliveryNonDeliveryToRecipient</ReceiptType>
-  <Network>OpenPeppol TEST</Network>
-  <APEndpoint>https://ap.kasaadvisory.com/as4</APEndpoint>
-</AS4NonRepudiationReceipt>`;
-    const blob = new Blob([xml], { type: "application/xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${doc?.invoice_number ?? id}_receipt.xml`;
-    a.click();
-    URL.revokeObjectURL(url);
+      // Real endpoint returned an error — show why
+      if (res.status === 404) {
+        alert(
+          "No AS4 Non-Repudiation Receipt is available for this invoice yet.\n\n" +
+          "This means the invoice has not been transmitted via the Peppol network, " +
+          "or the C3 receipt was not captured during transmission."
+        );
+      } else {
+        alert(`Receipt download failed (HTTP ${res.status}). Please try again.`);
+      }
+
+    } catch (err) {
+      alert("Connection error — could not download receipt. Please check your connection and try again.");
+    }
   };
 
   if (loading)
