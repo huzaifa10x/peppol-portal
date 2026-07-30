@@ -198,8 +198,8 @@ export default function InvoiceDetailPage() {
     try {
       const [docRes, histRes] = await Promise.all([
         // Direct endpoint — no more scanning 200 docs
-        fetch(`${BASE}/documents/${id}`, { headers }).then(r => r.json()),
-        fetch(`${BASE}/documents/${id}/status-history`, { headers }).then(r => r.json()),
+        fetch(`${BASE}/documents/${id}`, { credentials: "include" }).then(r => r.json()),
+        fetch(`${BASE}/documents/${id}/status-history`, { credentials: "include" }).then(r => r.json()),
       ]);
 
       // docRes IS the document now, not a list
@@ -209,7 +209,7 @@ export default function InvoiceDetailPage() {
 
       if (found?.direction === "outbound") {
         try {
-          const c3Res = await fetch(`${BASE}/receipts/as4-log/latest?lines=500`, { headers })
+          const c3Res = await fetch(`${BASE}/receipts/as4-log/latest?lines=500`, { credentials: "include" })
             .then(r => r.json());
           const receipts: C3Receipt[] = (c3Res.receipts ?? []).filter((r: C3Receipt) => r.c3_confirmed);
           const matched = receipts.find(r => r.message_id === found.c3_message_id) ?? null;
