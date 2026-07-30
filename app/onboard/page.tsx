@@ -70,25 +70,34 @@ function OnboardInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ── On mount: capture URL params then strip them ──────────────────────────
+  const [authcodeValid, setAuthcodeValid] = useState<boolean | null>(null);
+
+  // Replace the existing useEffect with this:
   useEffect(() => {
     const ac = searchParams.get("authcode") || "";
     const t = searchParams.get("TIN") || "";
     setAuthcode(ac);
     setTinFromUrl(t);
-    if (t) {
-      setTin(t);
-      setAction(2); // default to reverify when TIN is present
+    if (t) { setTin(t); setAction(2); }
+    if (ac || t) window.history.replaceState({}, "", "/onboard");
+
+    // Validate authcode on load
+    if (ac) {
+      fetch(`${API}/fta/validate-authcode?authcode=${encodeURIComponent(ac)}`, { credentials: "include" })
+        .then(r => r.json())
+        .then(d => setAuthcodeValid(d.valid !== false))
+        .catch(() => setAuthcodeValid(true)); // fail open on network error
+    } else {
+      setAuthcodeValid(true); // no authcode = reverify flow, allow
     }
-    if (ac || t) {
-      window.history.replaceState({}, "", "/onboard");
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const isOnboarding = !tinFromUrl;
 
   const canVerify =
-    isValidEmail(email) && (isOnboarding ? isValidTIN(tin) : true);
+    authcodeValid !== false &&
+    isValidEmail(email) &&
+    (isOnboarding ? isValidTIN(tin) : true);
 
   // ── Step 1: Verify taxpayer via /fta/verify ───────────────────────────────
   const handleVerify = async () => {
@@ -303,6 +312,25 @@ function OnboardInner() {
           </p>
         </div>
 
+        {authcodeValid === false && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-4 text-center">
+            <AlertCircle size={24} className="text-red-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-red-700">Link Expired or Already Used</p>
+            <p className="text-xs text-red-500 mt-1 leading-relaxed">
+              This onboarding link has expired or has already been used.<br />
+              Please contact KASA Advisory for a new invitation link.
+            </p>
+          </div>
+        )}
+
+        {/* Loading state while checking authcode */}
+        {authcodeValid === null && authcode && (
+          <div className="flex items-center justify-center gap-2 mb-4 text-xs text-gray-400">
+            <Loader2 size={14} className="animate-spin" />
+            Validating your invitation link…
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
 
           {/* Action radio — only shown for reverify/offboard */}
@@ -319,8 +347,8 @@ function OnboardInner() {
                   <label
                     key={opt.value}
                     className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${action === opt.value
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                       }`}
                   >
                     <input
@@ -352,8 +380,8 @@ function OnboardInner() {
               onChange={e => setEmail(e.target.value)}
               placeholder="admin@yourcompany.com"
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${email && !isValidEmail(email)
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-200"
+                ? "border-red-300 bg-red-50"
+                : "border-gray-200"
                 }`}
             />
             {email && !isValidEmail(email) && (
@@ -374,10 +402,10 @@ function OnboardInner() {
               placeholder="1000000000"
               maxLength={10}
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none ${!isOnboarding
-                  ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
-                  : tin && !isValidTIN(tin)
-                    ? "border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500"
-                    : "border-gray-200 focus:ring-2 focus:ring-blue-500"
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                : tin && !isValidTIN(tin)
+                  ? "border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500"
+                  : "border-gray-200 focus:ring-2 focus:ring-blue-500"
                 }`}
             />
             {isOnboarding && tin && !isValidTIN(tin) && (

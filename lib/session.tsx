@@ -57,7 +57,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setStatus("unauthenticated");
     window.location.href = "/login";
   };
-
   return (
     <SessionContext.Provider value={{ user, status, signOut, refresh: fetchSession }}>
       {children}
