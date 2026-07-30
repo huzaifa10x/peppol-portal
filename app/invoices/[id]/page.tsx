@@ -125,7 +125,6 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [showXml, setShowXml] = useState(false);
 
   const load = useCallback(async () => {
     try {
