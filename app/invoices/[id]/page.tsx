@@ -192,27 +192,29 @@ export default function InvoiceDetailPage() {
   const [syncing, setSyncing] = useState(false);
 
   const load = useCallback(async () => {
-    const token = localStorage.getItem("api_token") || localStorage.getItem("kasa_token") || "";
-    const headers: HeadersInit = { "Authorization": `Bearer ${token}` };
-
     try {
       const [docRes, histRes] = await Promise.all([
-        // Direct endpoint — no more scanning 200 docs
         fetch(`${BASE}/documents/${id}`, { credentials: "include" }).then(r => r.json()),
         fetch(`${BASE}/documents/${id}/status-history`, { credentials: "include" }).then(r => r.json()),
       ]);
 
-      // docRes IS the document now, not a list
-      const found: Doc = docRes.id ? docRes : null;
+      const found: Doc = docRes?.id ? docRes : null;
       setDoc(found);
       setHistory(histRes.history ?? []);
 
       if (found?.direction === "outbound") {
         try {
-          const c3Res = await fetch(`${BASE}/receipts/as4-log/latest?lines=500`, { credentials: "include" })
-            .then(r => r.json());
-          const receipts: C3Receipt[] = (c3Res.receipts ?? []).filter((r: C3Receipt) => r.c3_confirmed);
-          const matched = receipts.find(r => r.message_id === found.c3_message_id) ?? null;
+          const c3Res = await fetch(
+            `${BASE}/receipts/as4-log/latest?lines=500`,
+            { credentials: "include" }
+          ).then(r => r.json());
+
+          const receipts: C3Receipt[] = (c3Res.receipts ?? []).filter(
+            (r: C3Receipt) => r.c3_confirmed
+          );
+          const matched = receipts.find(
+            r => r.message_id === found.c3_message_id
+          ) ?? null;
 
           if (found.c3_message_id) {
             setC3({
