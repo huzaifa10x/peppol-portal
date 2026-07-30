@@ -38,10 +38,6 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
               <Link href="/terms" className="hover:text-[#7C01ED] transition-colors">
                 Terms of Service
               </Link>
-              <span>·</span>
-              <Link href="/data-retention" className="hover:text-[#7C01ED] transition-colors">
-                Data Storage (UAE)
-              </Link>
             </div>
             <div className="text-right text-gray-500">
               <p>Email: <a href="mailto:info@kasaadvisory.com" className="hover:underline text-gray-700">info@kasaadvisory.com</a></p>
