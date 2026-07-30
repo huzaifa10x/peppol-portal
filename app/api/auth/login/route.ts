@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-const API    = process.env.API_URL || "https://api.kasaadvisory.com";
+const API = process.env.API_URL || "https://api.kasaadvisory.com";
 const SECRET = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "peppol-nextauth-secret-2026-local"
 );
@@ -42,12 +42,12 @@ export async function POST(req: NextRequest) {
     }
 
     const token = await new SignJWT({
-      id:           user.id,
-      email:        user.email,
-      name:         user.name,
-      role:         user.role,
-      tenant_id:    user.tenant_id,
-      tenant_name:  user.tenant_name,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      tenant_id: user.tenant_id,
+      tenant_name: user.tenant_name,
       totp_enabled: user.totp_enabled ?? false,
     })
       .setProtectedHeader({ alg: "HS256" })
@@ -57,10 +57,10 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ ok: true, user });
     response.cookies.set("session", token, {
       httpOnly: true,
-      secure:   isProd,
+      secure: isProd,
       sameSite: isProd ? "none" : "lax",
-      maxAge:   60 * 60 * 24 * 7,
-      path:     "/",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
       ...(isProd && { domain: ".kasaadvisory.com" }),
     });
     return response;

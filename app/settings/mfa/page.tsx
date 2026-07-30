@@ -17,6 +17,9 @@ export default function MFASetupPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("api_token") : "";
+  const authHeaders = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+
   useEffect(() => {
     if (!userId) return;
     fetch(`${BASE}/auth/mfa/status/${userId}`, { credentials: "include" })
@@ -45,24 +48,33 @@ export default function MFASetupPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: userId, email: userEmail, code }),
     }).then(r => r.json());
-    if (r.verified) {
+    if (r.success) {
       setVerified(true);
       setStatus({ totp_enabled: true, totp_verified: true });
     }
     setLoading(false);
   };
 
+  const [disableCode, setDisableCode] = useState("");
+  const [erros, setError] = useState("");
+  const [showDisable, setShowDisable] = useState(false);
+
   const disableMFA = async () => {
-    if (!confirm("Disable MFA? This reduces account security.")) return;
-    await fetch(`${BASE}/auth/mfa/disable`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, email: userEmail }),
-    });
-    setStatus({ totp_enabled: false });
-    setSetup(null);
-    setVerified(false);
+    setLoading(true); setError("");
+    try {
+      const r = await fetch(`${BASE}/auth/mfa/disable`, {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ code: disableCode }),
+      }).then(r => r.json());
+      if (r.detail || r.error) throw new Error(r.detail || r.error);
+      setStatus({ totp_enabled: false });
+      setSetup(null); setVerified(false);
+      setShowDisable(false); setDisableCode("");
+    } catch (e: any) {
+      setError(e.message);
+    }
+    setLoading(false);
   };
 
   const copySecret = () => {
@@ -100,13 +112,40 @@ export default function MFASetupPage() {
             }
           </div>
         </div>
-        {status?.totp_enabled && (
-          <button onClick={disableMFA}
+        {status?.totp_enabled && !showDisable && (
+          <button onClick={() => setShowDisable(true)}
             className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
             Disable
           </button>
         )}
       </div>
+
+      {showDisable && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-5">
+          <p className="text-sm font-semibold text-red-800 mb-3">
+            Enter your 6-digit MFA code to disable
+          </p>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={disableCode}
+              onChange={e => setDisableCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="000000"
+              className="flex-1 px-3 py-2 border border-red-200 rounded-lg text-lg font-mono text-center tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-red-300"
+            />
+            <button onClick={disableMFA} disabled={loading || disableCode.length !== 6}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
+              {loading ? "Disabling…" : "Confirm Disable"}
+            </button>
+            <button onClick={() => { setShowDisable(false); setDisableCode(""); setError(""); }}
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Setup flow */}
       {!status?.totp_enabled && !setup && (
@@ -154,7 +193,7 @@ export default function MFASetupPage() {
           {/* QR code via Google Charts API */}
           <div className="flex justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setup.uri)}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setup.otpauth_uri)}`}
               alt="QR Code"
               className="w-48 h-48 rounded-xl border border-gray-200"
             />
