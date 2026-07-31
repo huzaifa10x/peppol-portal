@@ -87,7 +87,7 @@ export default function FTAOnboardingsPage() {
     if (!quiet) setLoading(true);
     else setRefreshing(true);
     try {
-      const res = await fetch(`${BASE}/fta/onboardings`, { headers: getHeaders() });
+      const res = await fetch(`${BASE}/fta/onboardings`, { credentials: "include" });
       const data = await res.json();
       setRecords(data.onboardings ?? []);
     } catch { /* ignore */ }
@@ -115,7 +115,7 @@ export default function FTAOnboardingsPage() {
     try {
       const res = await fetch(`${BASE}/fta/create-invite`, {
         method: "POST",
-        headers: getHeaders(),
+        credentials: "include",
         body: JSON.stringify(form),
       });
       const data = await res.json();
