@@ -25,17 +25,10 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const tenantId = (session?.user as any)?.tenant_id;
 
-  const [stats, setStats]       = useState<any>(null);
-  const [health, setHealth]     = useState<any>(null);
-  const [smp, setSmp]           = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [health, setHealth] = useState<any>(null);
+  const [smp, setSmp] = useState<any>(null);
   const [recentDocs, setRecent] = useState<any>(null);
-
-  // Auth guard
-  // useEffect(() => {
-  //   if (status === "unauthenticated") {
-  //     router.replace("/login");
-  //   }
-  // }, [status, router]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -50,40 +43,40 @@ export default function Dashboard() {
   // Stat Cards Config with KASA Brand & Fixed Status Palette
   const cards = [
     {
-      label:  "Total Documents",
-      value:  stats?.total ?? 0,
-      sub:    `${stats?.inbound ?? 0} inbound · ${stats?.outbound ?? 0} outbound`,
-      icon:   FileText,
-      color:  "text-[#7C01ED]",
-      bg:     "bg-purple-50",
-      href:   "/invoices",
+      label: "Total Documents",
+      value: stats?.total ?? 0,
+      sub: `${stats?.inbound ?? 0} inbound · ${stats?.outbound ?? 0} outbound`,
+      icon: FileText,
+      color: "text-[#7C01ED]",
+      bg: "bg-purple-50",
+      href: "/invoices",
     },
     {
-      label:  "Total Value (AED)",
-      value:  fmt(stats?.total_amount ?? 0),
-      sub:    `${fmt(stats?.outbound_amount ?? 0)} AED sent outbound`,
-      icon:   TrendingUp,
-      color:  "text-emerald-700",
-      bg:     "bg-emerald-50",
-      href:   "/invoices",
+      label: "Total Value (AED)",
+      value: fmt(stats?.total_amount ?? 0),
+      sub: `${fmt(stats?.outbound_amount ?? 0)} AED sent outbound`,
+      icon: TrendingUp,
+      color: "text-emerald-700",
+      bg: "bg-emerald-50",
+      href: "/invoices",
     },
     {
-      label:  "Outbound Sent",
-      value:  stats?.outbound_sent ?? 0,
-      sub:    `${stats?.outbound_failed ?? 0} failed · ${stats?.outbound_draft ?? 0} draft`,
-      icon:   Send,
-      color:  "text-[#7C01ED]",
-      bg:     "bg-purple-50",
-      href:   "/outbound",
+      label: "Outbound Sent",
+      value: stats?.outbound_sent ?? 0,
+      sub: `${stats?.outbound_failed ?? 0} failed · ${stats?.outbound_draft ?? 0} draft`,
+      icon: Send,
+      color: "text-[#7C01ED]",
+      bg: "bg-purple-50",
+      href: "/outbound",
     },
     {
-      label:  "System Health",
-      value:  health?.container_running ? "Healthy" : "Down",
-      sub:    health?.mls_watcher_pid ? `MLS PID ${health.mls_watcher_pid}` : "MLS watcher stopped",
-      icon:   health?.container_running ? CheckCircle2 : XCircle,
-      color:  health?.container_running ? "text-emerald-700" : "text-rose-700",
-      bg:     health?.container_running ? "bg-emerald-50" : "bg-rose-50",
-      href:   "/system",
+      label: "System Health",
+      value: health?.container_running == true ? "Healthy" : "Down",
+      sub: health?.mls_watcher_pid ? `MLS PID ${health.mls_watcher_pid}` : "MLS watcher stopped",
+      icon: health?.container_running ? CheckCircle2 : XCircle,
+      color: health?.container_running ? "text-emerald-700" : "text-rose-700",
+      bg: health?.container_running ? "bg-emerald-50" : "bg-rose-50",
+      href: "/system",
     },
   ];
 
@@ -106,8 +99,9 @@ export default function Dashboard() {
       </div>
 
       {/* Stat Cards */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {cards.map(({ label, value, sub, icon: Icon, color, bg, href }) => (
+        {stats && health && cards?.map(({ label, value, sub, icon: Icon, color, bg, href }) => (
           <Link
             key={label}
             href={href}
@@ -127,7 +121,7 @@ export default function Dashboard() {
 
       {/* Middle Grid Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Document Breakdown */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
           <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center justify-between">
@@ -135,10 +129,10 @@ export default function Dashboard() {
           </h2>
           <div className="space-y-4">
             {[
-              { label: "Billing (0235:pae001045)",  value: stats?.billing ?? 0,      color: "bg-[#7C01ED]" },
-              { label: "Self-Billing (0235:2222)",  value: stats?.selfbilling ?? 0,  color: "bg-purple-400" },
-              { label: "Invoices",                  value: stats?.invoices ?? 0,     color: "bg-emerald-600" },
-              { label: "Credit Notes",              value: stats?.credit_notes ?? 0, color: "bg-amber-500" },
+              { label: "Billing (0235:pae001045)", value: stats?.billing ?? 0, color: "bg-[#7C01ED]" },
+              { label: "Self-Billing (0235:2222)", value: stats?.selfbilling ?? 0, color: "bg-purple-400" },
+              { label: "Invoices", value: stats?.invoices ?? 0, color: "bg-emerald-600" },
+              { label: "Credit Notes", value: stats?.credit_notes ?? 0, color: "bg-amber-500" },
             ].map(({ label, value, color }) => {
               const pct = stats?.total ? Math.round((value / stats.total) * 100) : 0;
               return (
@@ -162,7 +156,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             {[
               { label: "TDDs Generated", value: stats?.tdds_generated ?? 0, total: stats?.inbound ?? 0, color: "bg-[#7C01ED]" },
-              { label: "TDDs Sent to C5", value: stats?.tdds_sent ?? 0,     total: stats?.inbound ?? 0, color: "bg-emerald-600" },
+              { label: "TDDs Sent to C5", value: stats?.tdds_sent ?? 0, total: stats?.inbound ?? 0, color: "bg-emerald-600" },
             ].map(({ label, value, total, color }) => {
               const pct = total ? Math.round((value / total) * 100) : 0;
               return (
@@ -177,7 +171,7 @@ export default function Dashboard() {
                 </div>
               );
             })}
-            
+
             <div className="pt-3 border-t border-gray-100 space-y-2">
               <div className="flex justify-between text-xs font-medium">
                 <span className="text-gray-600">Outbound Sent Success</span>
@@ -219,7 +213,7 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-          
+
           <div className="mt-4 pt-3 border-t border-gray-100">
             <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-semibold text-[#7C01ED] hover:underline">
               Manage Tenants & Participants <ArrowUpRight size={14} />
@@ -254,14 +248,12 @@ export default function Dashboard() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex gap-1.5">
-                      <span className={`text-[11px] px-2 py-0.5 rounded font-bold uppercase ${
-                        doc.participant_type === "billing" ? "bg-purple-100 text-[#7C01ED]" : "bg-purple-50 text-purple-800"
-                      }`}>
+                      <span className={`text-[11px] px-2 py-0.5 rounded font-bold uppercase ${doc.participant_type === "billing" ? "bg-purple-100 text-[#7C01ED]" : "bg-purple-50 text-purple-800"
+                        }`}>
                         {doc.participant_type === "billing" ? "Billing" : "Self-Bill"}
                       </span>
-                      <span className={`text-[11px] px-2 py-0.5 rounded font-bold uppercase ${
-                        doc.direction === "outbound" ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"
-                      }`}>
+                      <span className={`text-[11px] px-2 py-0.5 rounded font-bold uppercase ${doc.direction === "outbound" ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"
+                        }`}>
                         {doc.direction === "outbound" ? "OUT" : "IN"}
                       </span>
                     </div>
@@ -276,15 +268,14 @@ export default function Dashboard() {
                   </td>
                   <td className="px-6 py-4 text-xs text-gray-600">{doc.issue_date ?? "—"}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-bold border ${
-                      doc.status === "sent" || doc.status === "acknowledged"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : doc.status === "send_failed"
+                    <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-bold border ${doc.status === "sent" || doc.status === "acknowledged"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : doc.status === "send_failed"
                         ? "bg-rose-50 text-rose-700 border-rose-200"
                         : doc.status === "draft"
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-purple-50 text-[#7C01ED] border-purple-200"
-                    }`}>
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-purple-50 text-[#7C01ED] border-purple-200"
+                      }`}>
                       {doc.status}
                     </span>
                   </td>
