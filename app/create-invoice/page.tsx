@@ -18,7 +18,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { tenantApi, DBDocument } from "@/lib/api";
-import InvoiceFileUpload from "@/components/InvoiceFileUpload";
+import InvoiceFileUpload from "./InvoiceFileUpload";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 

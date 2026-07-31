@@ -52,7 +52,7 @@ export default function SystemPage() {
   useEffect(() => { load(); }, []);
 
   const allScriptsPresent = scripts
-    ? Object.values(scripts.scripts).every(v => v === "present")
+    ? Object.values(scripts?.scripts ?? {}).every((v) => v === "present")
     : null;
 
   const StatusRow = ({ label, ok, detail }: { label: string; ok: boolean; detail: string }) => (
@@ -90,16 +90,16 @@ export default function SystemPage() {
               <>
                 <StatusRow
                   label="Docker container"
-                  ok={health.container_running}
-                  detail={health.container_running ? "oxalis-ng-ap running" : "STOPPED"} />
+                  ok={health?.container_running}
+                  detail={health?.container_running ? "oxalis-ng-ap running" : "STOPPED"} />
                 <StatusRow
                   label="AP certificate"
-                  ok={health.cert_exists}
-                  detail={health.cert_exists ? "AP_PAE001045.p12 found" : "MISSING"} />
+                  ok={health?.cert_exists}
+                  detail={health?.cert_exists ? "AP_PAE001045.p12 found" : "MISSING"} />
                 <StatusRow
                   label="MLS watcher"
-                  ok={!!health.mls_watcher_pid}
-                  detail={health.mls_watcher_pid ? `PID ${health.mls_watcher_pid}` : "NOT RUNNING"} />
+                  ok={!!health?.mls_watcher_pid}
+                  detail={health?.mls_watcher_pid ? `PID ${health?.mls_watcher_pid}` : "NOT RUNNING"} />
                 <StatusRow
                   label="Send scripts"
                   ok={allScriptsPresent === true}
@@ -112,7 +112,7 @@ export default function SystemPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Recovery Actions</h2>
 
-            {health && !health.mls_watcher_pid && (
+            {health && !health?.mls_watcher_pid && (
               <div className="flex items-start gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                 <AlertTriangle size={14} className="text-orange-500 mt-0.5 shrink-0" />
                 <div className="flex-1">
@@ -141,7 +141,7 @@ export default function SystemPage() {
             {restoreResult && (
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <div className="text-xs font-medium text-gray-700 mb-2">Restore result:</div>
-                {Object.entries(restoreResult).map(([script, status]) => (
+                {Object.entries(restoreResult ?? {}).map(([script, status]) => (
                   <div key={script} className="flex items-center justify-between text-xs py-0.5">
                     <span className="font-mono text-gray-600">{script}</span>
                     <span className={status === "ok" ? "text-green-600" : "text-red-500"}>{status}</span>
@@ -150,7 +150,7 @@ export default function SystemPage() {
               </div>
             )}
 
-            {health && !health.mls_watcher_pid && (
+            {health && !health?.mls_watcher_pid && (
               <button onClick={startWatcher} disabled={starting}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors">
                 <Play size={14} />
@@ -164,7 +164,7 @@ export default function SystemPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Send Scripts</h2>
               <div className="space-y-2">
-                {Object.entries(scripts.scripts).map(([script, status]) => (
+                {scripts.scripts && Object.entries(scripts.scripts).map(([script, status]) => (
                   <div key={script} className="flex items-center justify-between">
                     <span className="text-xs font-mono text-gray-600">{script}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status === "present"
@@ -190,8 +190,8 @@ export default function SystemPage() {
                 ["SMP", "smp.kasaadvisory.com"],
                 ["Software", "Oxalis-NG 1.2.0"],
                 ["Certificate", "Expires 2028-03-04"],
-                ["Last check", health?.timestamp ? new Date(health.timestamp).toLocaleString() : "—"],
-              ].map(([k, v]) => (
+                ["Last check", health?.timestamp ? new Date(health?.timestamp).toLocaleString() : "—"],
+              ]?.map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
                   <span className="text-gray-400 shrink-0">{k}</span>
                   <span className="font-mono text-gray-700 text-right">{v}</span>
