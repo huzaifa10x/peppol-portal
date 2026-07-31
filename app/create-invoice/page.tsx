@@ -211,6 +211,15 @@ export default function CreateInvoicePage() {
       setError("Buyer name, Tax ID, and Peppol ID are required");
       return;
     }
+    const trnRegex = /^1\d{12}03$/;
+    if (!trnRegex.test(form.buyer_tax_id.trim())) {
+      setError("Buyer TRN must be 15 digits, start with 1 and end with 03");
+      return;
+    }
+    if (!trnRegex.test(form.supplier_tax_id.trim())) {
+      setError("Supplier TRN must be 15 digits, start with 1 and end with 03");
+      return;
+    }
     if (lines.some((l) => !l.description || l.unit_price <= 0)) {
       setError("All line items need a description and price > 0");
       return;
@@ -524,7 +533,7 @@ export default function CreateInvoicePage() {
                   onChange={(v) => setField("buyer_tax_id", v)}
                   mono
                   required
-                  placeholder="200000000000003"
+                  placeholder="100000000000003"
                 />
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wider">
@@ -537,7 +546,7 @@ export default function CreateInvoicePage() {
                         setField("buyer_peppol_id", e.target.value);
                         setReceiverStatus(null);
                       }}
-                      placeholder="0235:200000000000003"
+                      placeholder="0235:100000000000003"
                       className="flex-1 px-3.5 py-2.5 text-sm text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C01ED] focus:border-transparent font-mono bg-white shadow-2xs"
                     />
                     <button
