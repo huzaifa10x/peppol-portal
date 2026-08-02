@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { tenantApi, DBDocument } from "@/lib/api";
 import InvoiceFileUpload from "./InvoiceFileUpload";
+import BulkUpload from "./BulkUpload";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
@@ -987,6 +988,7 @@ export default function CreateInvoicePage() {
       {showUpload && (
         <InvoiceFileUpload onExtracted={handleExtracted} onClose={() => setShowUpload(false)} />
       )}
+      <BulkUpload />
     </div>
   );
 }
