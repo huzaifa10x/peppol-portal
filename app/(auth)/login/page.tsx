@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Smartphone } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,9 @@ export default function LoginPage() {
   const [step, setStep] = useState<"credentials" | "mfa">("credentials");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,6 +215,17 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {reason === "timeout" && (
+        <div style={{
+          background: "#FAEEDA", color: "#633806",
+          border: "1px solid #EF9F27",
+          borderRadius: "8px", padding: "12px 16px",
+          fontSize: "13px", marginBottom: "1rem"
+        }}>
+          Your session expired after 5 minutes of inactivity.
+        </div>
+      )}
 
       {/* Clean Demo Disclaimer Banner */}
       <div className="max-w-md mx-auto w-full text-center">
