@@ -188,38 +188,40 @@ export default function Dashboard() {
         </div>
 
         {/* SMP Participants */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-4">SMP Participants</h2>
-            <div className="space-y-3">
-              {smp?.participants?.map((p: any) => (
-                <div key={p.participant} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
-                  <div>
-                    <div className="text-xs font-bold text-gray-800">{p.label}</div>
-                    <div className="text-[11px] text-gray-500 font-mono mt-0.5">{p.participant}</div>
+        {smp &&
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <h2 className="text-base font-bold text-gray-900 mb-4">SMP Participants</h2>
+              <div className="space-y-3">
+                {smp?.participants?.map((p: any) => (
+                  <div key={p.participant} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+                    <div>
+                      <div className="text-xs font-bold text-gray-800">{p.label}</div>
+                      <div className="text-[11px] text-gray-500 font-mono mt-0.5">{p.participant}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {p.registered ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 size={12} /> {p.services} svc
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                          <XCircle size={12} /> Unregistered
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {p.registered ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 size={12} /> {p.services} svc
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                        <XCircle size={12} /> Unregistered
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-semibold text-[#7C01ED] hover:underline">
+                Manage Tenants & Participants <ArrowUpRight size={14} />
+              </Link>
             </div>
           </div>
-
-          <div className="mt-4 pt-3 border-t border-gray-100">
-            <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-semibold text-[#7C01ED] hover:underline">
-              Manage Tenants & Participants <ArrowUpRight size={14} />
-            </Link>
-          </div>
-        </div>
+        }
       </div>
 
       {/* Recent Documents Table */}
