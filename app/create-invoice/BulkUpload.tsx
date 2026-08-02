@@ -141,7 +141,8 @@ export default function BulkUpload() {
                                     f.name.endsWith(".json") ||
                                     f.name.endsWith(".xml") ||
                                     f.name.endsWith(".csv") ||
-                                    f.name.endsWith(".xlsx")
+                                    f.name.endsWith(".xlsx") ||
+                                    f.name.endsWith(".pdf")
                                 )
                                 .filter(f => f.name.endsWith(".json") || f.name.endsWith(".xml"));
                             setFiles(prev => [...prev, ...dropped]);
@@ -158,9 +159,9 @@ export default function BulkUpload() {
                             Drop files here or click to browse
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                            .json · .csv · .xlsx · .xml — multiple files supported
+                            .json · .csv · .xlsx · .xml · .pdf — multiple files supported
                         </p>
-                        <input ref={inputRef} type="file" multiple accept=".json,.xml,.csv,.xlsx"
+                        <input ref={inputRef} type="file" multiple accept=".json,.xml,.csv,.xlsx,.pdf"
                             className="hidden"
                             onChange={e => {
                                 setFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
@@ -176,6 +177,7 @@ export default function BulkUpload() {
                                     csv: "bg-green-100 text-green-700",
                                     xlsx: "bg-emerald-100 text-emerald-700",
                                     xml: "bg-blue-100 text-blue-700",
+                                    pdf: "bg-red-100 text-red-700",
                                 };
                                 return (
                                     <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
