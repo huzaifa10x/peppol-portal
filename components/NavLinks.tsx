@@ -49,12 +49,12 @@ const allNav = [
     icon: FilePlus,
     roles: ["super_admin", "admin", "invoice_manager"],
   },
-  {
-    href: "/validate",
-    label: "Validate",
-    icon: CheckSquare,
-    roles: ["super_admin", "admin", "invoice_manager"],
-  },
+  // {
+  //   href: "/validate",
+  //   label: "Validate",
+  //   icon: CheckSquare,
+  //   roles: ["super_admin", "admin", "invoice_manager"],
+  // },
   {
     href: "/fta-onboardings",
     label: "FTA Onboardings",
