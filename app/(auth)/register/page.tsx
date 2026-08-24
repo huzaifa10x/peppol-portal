@@ -6,6 +6,8 @@ import {
   Mail, Phone, Hash, Loader2,
 } from "lucide-react";
 
+// /Users/macbook/Documents/Next Projects/peppol-portal/app/(auth)/register
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Stage = "form" | "details" | "success";
@@ -28,7 +30,6 @@ interface EntityData {
 
 function isValidTIN(v: string) { return /^1\d{9}$/.test(v.trim()); }
 function isValidEmail(v: string) {
-  if (!v.trim()) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
@@ -78,7 +79,7 @@ function OnboardInner() {
   // Replace the existing useEffect with this:
   useEffect(() => {
     const ac = searchParams.get("authcode") || "";
-    const t = searchParams.get("TIN") || "";
+    const t = searchParams.get("TIN") || searchParams.get("tin") || "";
     setAuthcode(ac);
     setTinFromUrl(t);
     if (t) { setTin(t); setAction(2); }
@@ -91,7 +92,7 @@ function OnboardInner() {
         .then(d => setAuthcodeValid(d.valid !== false))
         .catch(() => setAuthcodeValid(true)); // fail open on network error
     } else {
-      setAuthcodeValid(true); // no authcode = reverify flow, allow
+      setAuthcodeValid(false); // no authcode = reverify flow, allow
     }
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -99,6 +100,7 @@ function OnboardInner() {
 
   const canVerify =
     authcodeValid !== false &&
+    isValidEmail(email) &&
     (isOnboarding ? isValidTIN(tin) : true);
 
   // ── Step 1: Verify taxpayer via /fta/verify ───────────────────────────────
@@ -375,7 +377,7 @@ function OnboardInner() {
           {/* Email */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Registered EmaraTax E-mail Address (Optional)
+              Registered EmaraTax E-mail Address <span className="text-red-500 ml-0.5">*</span>
             </label>
             <input
               type="email" value={email}
