@@ -83,7 +83,7 @@ function OnboardInner() {
     setAuthcode(ac);
     setTinFromUrl(t);
     if (t) { setTin(t); setAction(2); }
-    if (ac || t) window.history.replaceState({}, "", "/onboard");
+    // if (ac || t) window.history.replaceState({}, "", "/onboard");
 
     // Validate authcode on load
     if (ac) {
