@@ -38,14 +38,19 @@ const API = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 // ─── Read-only entity field ────────────────────────────────────────────────────
 
 function ReadField({
-  label, value, icon: Icon,
-}: { label: string; value: string; icon?: React.ElementType }) {
+  label, value, icon: Icon, ltr = false,
+}: { label: string; value: string; icon?: React.ElementType; ltr?: boolean }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-xs text-gray-400 font-medium">{label}</span>
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
         {Icon && <Icon size={14} className="text-gray-400 shrink-0" />}
-        <span className="text-sm text-gray-700 font-medium">{value || "—"}</span>
+        <span
+          className="text-sm text-gray-700 font-medium"
+          dir={ltr ? "ltr" : undefined}
+        >
+          {value || "—"}
+        </span>
       </div>
     </div>
   );
@@ -76,7 +81,6 @@ function OnboardInner() {
 
   const [authcodeValid, setAuthcodeValid] = useState<boolean | null>(null);
 
-  // Replace the existing useEffect with this:
   useEffect(() => {
     const ac = searchParams.get("authcode") || "";
     const t = searchParams.get("TIN") || searchParams.get("tin") || "";
@@ -122,13 +126,13 @@ function OnboardInner() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.detail || data.error || "Verification failed. Please check your details.");
+        setError(data.detail || data.error || "فشل التحقق. يُرجى مراجعة البيانات المُدخلة.");
       } else {
         setEntityData(data);
         setStage("details");
       }
     } catch {
-      setError("Connection error — please try again.");
+      setError("تعذّر الاتصال بالخادم — يُرجى المحاولة مرة أخرى.");
     }
     setLoading(false);
   };
@@ -154,6 +158,7 @@ function OnboardInner() {
           effectiveDate: entityData.effectiveDate,
           legalType: entityData.legalType,
           action,
+          // NOTE: kept in English — this value is sent to the FTA/GSB backend.
           reason:
             action === 3 ? "Taxpayer offboarding request"
               : action === 2 ? "Reverification request"
@@ -162,17 +167,17 @@ function OnboardInner() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.detail || data.error || "Registration failed. Please try again.");
+        setError(data.detail || data.error || "فشل تنفيذ الطلب. يُرجى المحاولة مرة أخرى.");
       } else {
         setStage("success");
       }
     } catch {
-      setError("Connection error — please try again.");
+      setError("تعذّر الاتصال بالخادم — يُرجى المحاولة مرة أخرى.");
     }
     setLoading(false);
   };
 
-  const actionLabel = action === 3 ? "Offboard" : action === 2 ? "Reverify" : "Onboard";
+  const actionLabel = action === 3 ? "إلغاء الربط" : action === 2 ? "إعادة التحقق" : "الربط";
   const actionBtnCls =
     action === 3 ? "bg-red-600 hover:bg-red-700"
       : "bg-[#7C01ED] hover:bg-[#7C01ED]";
@@ -182,24 +187,24 @@ function OnboardInner() {
   // ────────────────────────────────────────────────────────────────────────────
   if (stage === "success") {
     const msg = {
-      1: "Your e-invoicing registration has been successfully linked to KASA Advisory.",
-      2: "Your e-invoicing registration has been successfully reverified.",
-      3: "Your e-invoicing registration has been successfully removed from KASA Advisory.",
+      1: "تم ربط تسجيلكم في الفوترة الإلكترونية بشركة كاسا أدفيزوري بنجاح.",
+      2: "تمت إعادة التحقق من تسجيلكم في الفوترة الإلكترونية بنجاح.",
+      3: "تم إلغاء ربط تسجيلكم في الفوترة الإلكترونية بشركة كاسا أدفيزوري بنجاح.",
     }[action];
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div dir="rtl" lang="ar" className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
           <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={28} className="text-green-600" />
           </div>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">
-            {action === 3 ? "Offboarded Successfully"
-              : action === 2 ? "Reverified Successfully"
-                : "Onboarded Successfully"}
+            {action === 3 ? "تم إلغاء الربط بنجاح"
+              : action === 2 ? "تمت إعادة التحقق بنجاح"
+                : "تم الربط بنجاح"}
           </h2>
           <p className="text-sm text-gray-500 mb-6">{msg}</p>
           <p className="text-xs text-gray-400">
-            You may now close this window and return to EmaraTax.
+            يمكنكم الآن إغلاق هذه النافذة والعودة إلى منصة «إمارات تاكس».
           </p>
         </div>
       </div>
@@ -211,45 +216,47 @@ function OnboardInner() {
   // ────────────────────────────────────────────────────────────────────────────
   if (stage === "details" && entityData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div dir="rtl" lang="ar" className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
             <div className="w-14 h-14 bg-[#7C01ED] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Shield size={28} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Confirm Your Details</h1>
-            <p className="text-sm text-gray-500 mt-1">Please review the information below</p>
+            <h1 className="text-xl font-bold text-gray-900">تأكيد البيانات</h1>
+            <p className="text-sm text-gray-500 mt-1">يُرجى مراجعة المعلومات الواردة أدناه</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
 
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-              Applicant Details
+              بيانات مقدّم الطلب
             </p>
-            <ReadField label="Registered Email" value={entityData.email} icon={Mail} />
-            <ReadField label="TIN (Tax Identifier)" value={entityData.TIN} icon={Hash} />
+            <ReadField label="البريد الإلكتروني المسجّل" value={entityData.email} icon={Mail} ltr />
+            <ReadField label="رقم المعرّف الضريبي (TIN)" value={entityData.TIN} icon={Hash} ltr />
             {entityData.mobile && (
-              <ReadField label="Mobile" value={entityData.mobile} icon={Phone} />
+              <ReadField label="رقم الهاتف المتحرك" value={entityData.mobile} icon={Phone} ltr />
             )}
 
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide pt-2">
-              Entity Details
+              بيانات المنشأة
             </p>
             {entityData.legalType && (
-              <ReadField label="Legal Type" value={entityData.legalType} icon={Building2} />
+              <ReadField label="الشكل القانوني" value={entityData.legalType} icon={Building2} />
             )}
-            <ReadField label="Entity Legal Name (EN)" value={entityData.entityNameEn} icon={Building2} />
+            <ReadField label="الاسم القانوني للمنشأة (بالإنجليزية)" value={entityData.entityNameEn} icon={Building2} ltr />
             {entityData.entityNameAr && (
-              <ReadField label="Entity Legal Name (AR)" value={entityData.entityNameAr} />
+              <ReadField label="الاسم القانوني للمنشأة (بالعربية)" value={entityData.entityNameAr} />
             )}
-            <ReadField label="VAT TRN" value={entityData.vatTrn} icon={Hash} />
+            <ReadField label="رقم التسجيل الضريبي (TRN)" value={entityData.vatTrn} icon={Hash} ltr />
             <ReadField
-              label="Effective Date of Registration"
+              label="تاريخ سريان التسجيل"
               value={entityData.effectiveDate}
+              ltr
             />
             <ReadField
-              label="Date of Submission"
+              label="تاريخ تقديم الطلب"
               value={new Date().toISOString().split("T")[0]}
+              ltr
             />
 
             {/* Declaration */}
@@ -261,8 +268,7 @@ function OnboardInner() {
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-xs text-gray-600 leading-relaxed">
-                I declare that all information provided is true, accurate and complete
-                to the best of my knowledge and belief.
+                أُقرّ بأن جميع المعلومات المقدَّمة صحيحة ودقيقة وكاملة على حدّ علمي واعتقادي.
               </span>
             </label>
 
@@ -278,7 +284,7 @@ function OnboardInner() {
                 onClick={() => { setStage("form"); setError(""); }}
                 className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors"
               >
-                Back
+                رجوع
               </button>
               <button
                 onClick={handleSubmit}
@@ -286,8 +292,8 @@ function OnboardInner() {
                 className={`flex-1 py-2.5 text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${actionBtnCls}`}
               >
                 {loading
-                  ? <><Loader2 size={16} className="animate-spin" /> Processing...</>
-                  : `Submit & ${actionLabel}`}
+                  ? <><Loader2 size={16} className="animate-spin" /> جارٍ المعالجة...</>
+                  : `إرسال الطلب وإتمام ${actionLabel}`}
               </button>
             </div>
           </div>
@@ -300,7 +306,7 @@ function OnboardInner() {
   // FORM — main input screen
   // ────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div dir="rtl" lang="ar" className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
 
         {/* Header */}
@@ -309,20 +315,20 @@ function OnboardInner() {
             <Shield size={28} className="text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">
-            {isOnboarding ? "Linking Request" : "Reverifying / Delinking Request"}
+            {isOnboarding ? "طلب الربط" : "طلب إعادة التحقق / إلغاء الربط"}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            KASA Advisory · UAE PINT-AE e-invoicing
+            كاسا أدفيزوري · الفوترة الإلكترونية PINT-AE في دولة الإمارات
           </p>
         </div>
 
         {authcodeValid === false && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-4 text-center">
             <AlertCircle size={24} className="text-red-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-red-700">Link Expired or Already Used</p>
+            <p className="text-sm font-semibold text-red-700">الرابط منتهي الصلاحية أو مُستخدَم مسبقاً</p>
             <p className="text-xs text-red-500 mt-1 leading-relaxed">
-              This onboarding link has expired or has already been used.<br />
-              Please contact KASA Advisory for a new invitation link.
+              انتهت صلاحية رابط الربط هذا أو تم استخدامه من قبل.<br />
+              يُرجى التواصل مع كاسا أدفيزوري للحصول على رابط دعوة جديد.
             </p>
           </div>
         )}
@@ -331,7 +337,7 @@ function OnboardInner() {
         {authcodeValid === null && authcode && (
           <div className="flex items-center justify-center gap-2 mb-4 text-xs text-gray-400">
             <Loader2 size={14} className="animate-spin" />
-            Validating your invitation link…
+            جارٍ التحقق من رابط الدعوة…
           </div>
         )}
 
@@ -341,12 +347,12 @@ function OnboardInner() {
           {!isOnboarding && (
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                Select Action
+                اختيار الإجراء
               </p>
               <div className="flex gap-3">
                 {[
-                  { value: 2 as Action, label: "Reverify" },
-                  { value: 3 as Action, label: "Delinking" },
+                  { value: 2 as Action, label: "إعادة التحقق" },
+                  { value: 3 as Action, label: "إلغاء الربط" },
                 ].map(opt => (
                   <label
                     key={opt.value}
@@ -371,35 +377,37 @@ function OnboardInner() {
           )}
 
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-            Applicant Details
+            بيانات مقدّم الطلب
           </p>
 
           {/* Email */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Registered EmaraTax E-mail Address <span className="text-red-500 ml-0.5">*</span>
+              البريد الإلكتروني المسجّل في «إمارات تاكس» <span className="text-red-500 ms-0.5">*</span>
             </label>
             <input
               type="email" value={email}
+              dir="ltr"
               onChange={e => setEmail(e.target.value)}
               placeholder="admin@yourcompany.com"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm text-left border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* TIN */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              TIN (Tax Identifier Number)
-              {isOnboarding && <span className="text-red-500 ml-0.5">*</span>}
+              رقم المعرّف الضريبي (TIN)
+              {isOnboarding && <span className="text-red-500 ms-0.5">*</span>}
             </label>
             <input
               type="text" value={tin}
+              dir="ltr"
               onChange={e => isOnboarding && setTin(e.target.value)}
               readOnly={!isOnboarding}
               placeholder="1000000000"
               maxLength={10}
-              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none ${!isOnboarding
+              className={`w-full px-3 py-2 text-sm text-left border rounded-lg focus:outline-none ${!isOnboarding
                 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
                 : tin && !isValidTIN(tin)
                   ? "border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500"
@@ -408,7 +416,7 @@ function OnboardInner() {
             />
             {isOnboarding && tin && !isValidTIN(tin) && (
               <p className="text-xs text-red-500 mt-0.5">
-                TIN must start with 1 and be exactly 10 digits
+                يجب أن يبدأ رقم المعرّف الضريبي بالرقم 1 وأن يتكوّن من 10 أرقام بالضبط
               </p>
             )}
           </div>
@@ -416,9 +424,9 @@ function OnboardInner() {
           {/* Mobile (optional) */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Registered Mobile Number (Optional)
+              رقم الهاتف المتحرك المسجّل (اختياري)
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2" dir="ltr">
               <select
                 value={countryCode}
                 onChange={e => setCountryCode(e.target.value)}
@@ -437,7 +445,7 @@ function OnboardInner() {
                 type="tel" value={mobile}
                 onChange={e => setMobile(e.target.value)}
                 placeholder="50 123 4567"
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 text-sm text-left border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -455,14 +463,14 @@ function OnboardInner() {
             className="w-full py-2.5 bg-[#7C01ED] text-white rounded-xl font-medium text-sm hover:bg-[#7C01ED] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mt-2"
           >
             {loading
-              ? <><Loader2 size={16} className="animate-spin" /> Verifying...</>
-              : "Verify Applicant Details"}
+              ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحقق...</>
+              : "التحقق من بيانات مقدّم الطلب"}
           </button>
         </div>
 
         <div className="flex items-center justify-center gap-2 mt-4 text-xs text-gray-400">
           <Shield size={12} />
-          <span>Secured by UAE Federal Tax Authority · PINT-AE compliant</span>
+          <span>مؤمَّن وفق متطلبات الهيئة الاتحادية للضرائب · متوافق مع PINT-AE</span>
         </div>
       </div>
     </div>
@@ -475,12 +483,12 @@ export default function OnboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div dir="rtl" lang="ar" className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="w-14 h-14 bg-[#7C01ED] rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
               <Shield size={28} className="text-white" />
             </div>
-            <p className="text-sm text-gray-500">Loading...</p>
+            <p className="text-sm text-gray-500">جارٍ التحميل...</p>
           </div>
         </div>
       }
