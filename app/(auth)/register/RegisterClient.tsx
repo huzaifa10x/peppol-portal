@@ -104,6 +104,21 @@ export default function RegisterClient() {
   // ---- load journey context from the cookie ------------------------------
   useEffect(() => {
     (async () => {
+      // middleware sets ?status= when the authcode exchange failed
+      const status = new URLSearchParams(window.location.search).get("status");
+      if (status === "ALREADY_USED") {
+        setDeadMsg("This link has already been used. Please start a new request from EmaraTax.");
+        setStage("dead"); return;
+      }
+      if (status === "unavailable") {
+        setDeadMsg("We could not reach our service. Please try again shortly. No changes have been made.");
+        setStage("dead"); return;
+      }
+      if (status) {
+        setDeadMsg("This link is not valid or has expired. Please start again from EmaraTax.");
+        setStage("dead"); return;
+      }
+
       try {
         const res = await fetch(`${API}/fta/session`, { credentials: "include" });
         const data = await res.json();
