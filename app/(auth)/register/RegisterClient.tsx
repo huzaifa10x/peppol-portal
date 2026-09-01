@@ -41,7 +41,7 @@ interface ApiError {
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
-const isValidTIN = (v: string) => /^\d{10}$/.test(v.trim());
+const isValidTIN = (v: string) => /^1\d{9}$/.test(v.trim());
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 function ReadField({ label, value, icon: Icon }:
@@ -61,8 +61,7 @@ function ReadField({ label, value, icon: Icon }:
 function ErrorBanner({ err, onRetry }: { err: ApiError; onRetry?: () => void }) {
   const retryable = err.retryable === true;
   return (
-    <div className={`flex items-start gap-2 p-3 rounded-xl border ${
-      retryable ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"}`}>
+    <div className={`flex items-start gap-2 p-3 rounded-xl border ${retryable ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"}`}>
       {retryable
         ? <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
         : <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />}
@@ -187,7 +186,7 @@ export default function RegisterClient() {
           tin: entityData.TIN,
           action,
           reason: reason.trim() || (action === 3 ? "Delinking"
-                  : action === 2 ? "Reverification" : "New onboarding"),
+            : action === 2 ? "Reverification" : "New onboarding"),
         }),
       });
       const data = await res.json();
@@ -247,8 +246,7 @@ export default function RegisterClient() {
     return (
       <Shell>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
-            action === 3 ? "bg-gray-100" : "bg-green-100"}`}>
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${action === 3 ? "bg-gray-100" : "bg-green-100"}`}>
             <CheckCircle size={28} className={action === 3 ? "text-gray-500" : "text-green-600"} />
           </div>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">
@@ -314,7 +312,7 @@ export default function RegisterClient() {
             <button onClick={doSubmit} disabled={!declared || loading}
               className={`flex-1 py-2.5 text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${btnCls}`}>
               {loading ? <><Loader2 size={16} className="animate-spin" /> Processing…</>
-                       : `Submit & ${actionLabel}`}
+                : `Submit & ${actionLabel}`}
             </button>
           </div>
         </div>
@@ -337,18 +335,16 @@ export default function RegisterClient() {
             </p>
             <div className="flex gap-3">
               {[{ value: 2 as Action, label: "Reverify" },
-                { value: 3 as Action, label: "Delinking" }].map(opt => (
+              { value: 3 as Action, label: "Delinking" }].map(opt => (
                 <label key={opt.value}
-                  className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer ${
-                    action === opt.value
+                  className={`flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer ${action === opt.value
                       ? "border-[#7E01ED] bg-[#F6EDFE]"
                       : "border-gray-200 hover:border-gray-300"}`}>
                   <input type="radio" name="action" value={opt.value}
                     checked={action === opt.value}
                     onChange={() => setAction(opt.value)}
                     className="accent-[#7E01ED]" />
-                  <span className={`text-sm font-medium ${
-                    action === opt.value ? "text-[#4A0A8C]" : "text-gray-600"}`}>
+                  <span className={`text-sm font-medium ${action === opt.value ? "text-[#4A0A8C]" : "text-gray-600"}`}>
                     {opt.label}
                   </span>
                 </label>
@@ -365,8 +361,7 @@ export default function RegisterClient() {
           </label>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)}
             placeholder="admin@yourcompany.com"
-            className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 ${
-              email && !isValidEmail(email)
+            className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 ${email && !isValidEmail(email)
                 ? "border-red-300 bg-red-50 focus:ring-red-500"
                 : "border-gray-200 focus:ring-[#7E01ED]"}`} />
           {email && !isValidEmail(email) && (
@@ -381,13 +376,12 @@ export default function RegisterClient() {
           <input type="text" value={tin} maxLength={10} inputMode="numeric"
             onChange={e => isOnboarding && setTin(e.target.value.replace(/\D/g, ""))}
             readOnly={!isOnboarding} placeholder="1000000000"
-            className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none ${
-              !isOnboarding ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+            className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none ${!isOnboarding ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
                 : tin && !isValidTIN(tin)
                   ? "border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500"
                   : "border-gray-200 focus:ring-2 focus:ring-[#7E01ED]"}`} />
           {isOnboarding && tin && !isValidTIN(tin) && (
-            <p className="text-xs text-red-500 mt-0.5">TIN must be exactly 10 digits</p>
+            <p className="text-xs text-red-500 mt-0.5">TIN must start with 1 and be exactly 10 digits</p>
           )}
         </div>
 
@@ -418,7 +412,7 @@ export default function RegisterClient() {
         <button onClick={doVerify} disabled={!canVerify || loading}
           className="w-full py-2.5 bg-[#7E01ED] hover:bg-[#6501C2] text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2">
           {loading ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
-                   : "Verify Applicant Details"}
+            : "Verify Applicant Details"}
         </button>
       </div>
     </Shell>
