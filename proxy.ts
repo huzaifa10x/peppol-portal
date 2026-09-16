@@ -71,9 +71,9 @@ async function handleFtaRedirect(req: NextRequest, basePath: string) {
     clean.searchParams.set("status", "unavailable");
   }
 
-  // 307 replaces the history entry rather than adding one, so the URL that
-  // carried the authcode is not left in the back stack.
-  const response = NextResponse.redirect(clean, 307);
+  // uncoment it to hide auth code from url
+  // const response = NextResponse.redirect(clean, 307);
+  const response = NextResponse.next();
 
   if (ref) {
     response.cookies.set("asp_ref", ref, {
