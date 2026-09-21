@@ -72,8 +72,8 @@ async function handleFtaRedirect(req: NextRequest, basePath: string) {
   }
 
   // uncoment it to hide auth code from url
-  const response = NextResponse.redirect(clean, 307);
-  // const response = NextResponse.next();
+  // const response = NextResponse.redirect(clean, 307);
+  const response = NextResponse.next();
 
   if (ref) {
     response.cookies.set("asp_ref", ref, {
