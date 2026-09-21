@@ -8,16 +8,21 @@
 // service unavailable, timeout, Peppol failure, expired link, already used,
 // already linked, and validation errors, each stating whether the
 // taxpayer's status changed.
+//
+// Pending state (HTTP 202 PENDING_RETRY): FTA could not be reached when the
+// registration was submitted. The backend holds the request and retries it
+// automatically, so the taxpayer is told it was accepted and is processing —
+// never shown a false "success" and never asked to resubmit.
 
 "use client";
 
 import { useState, useEffect } from "react";
 import {
   Shield, CheckCircle, AlertCircle, AlertTriangle, Building2,
-  Mail, Phone, Hash, Loader2, RefreshCw,
+  Mail, Phone, Hash, Loader2, RefreshCw, Clock,
 } from "lucide-react";
 
-type Stage = "loading" | "form" | "details" | "success" | "dead";
+type Stage = "loading" | "form" | "details" | "pending" | "success" | "dead"; // NEW: pending
 type Action = 1 | 2 | 3;
 
 interface EntityData {
@@ -37,6 +42,14 @@ interface SessionCtx {
 interface ApiError {
   error?: string; code?: string; retryable?: boolean;
   reference_id?: string; stage?: string; field?: string;
+}
+
+// NEW: what the backend returns with HTTP 202
+interface PendingInfo {
+  message: string;
+  attempts?: number;
+  maxAttempts?: number;
+  nextRetryAt?: string;
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
@@ -99,6 +112,7 @@ export default function RegisterClient() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<ApiError | null>(null);
   const [deadMsg, setDeadMsg] = useState("");
+  const [pending, setPending] = useState<PendingInfo | null>(null); // NEW
 
   // ---- load journey context from the cookie ------------------------------
   useEffect(() => {
@@ -190,7 +204,19 @@ export default function RegisterClient() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
+
+      // NEW: 202 counts as res.ok, so it must be checked first — otherwise a
+      // request still waiting on FTA would be shown as a completed success.
+      if (res.status === 202 || data.pending) {
+        setPending({
+          message: data.error
+            || "Your request has been accepted and will be completed automatically.",
+          attempts: data.attempts,
+          maxAttempts: data.maxAttempts,
+          nextRetryAt: data.nextRetryAt,
+        });
+        setStage("pending");
+      } else if (!res.ok) {
         if (data.code === "EXPIRED" || data.code === "NO_SESSION") {
           setDeadMsg(data.error); setStage("dead"); return;
         }
@@ -230,6 +256,58 @@ export default function RegisterClient() {
           <p className="text-sm text-gray-700">{deadMsg}</p>
           <p className="text-xs text-gray-400 mt-3">
             No changes have been made to your registration.
+          </p>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ---- NEW: pending (accepted, FTA unreachable, retrying automatically) ---
+  if (stage === "pending" && pending) {
+    const what = action === 3 ? "delinking" : action === 2 ? "reverification" : "linking";
+    const nextAt = pending.nextRetryAt
+      ? new Date(pending.nextRetryAt).toLocaleTimeString()
+      : null;
+    return (
+      <Shell title="Request Accepted — Processing">
+        <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-8 text-center">
+          <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Clock size={28} className="text-amber-600" />
+          </div>
+          <p className="text-sm text-gray-700 mb-4">{pending.message}</p>
+
+          <div className="text-left bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2 mb-4">
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Request</span>
+              <span className="font-medium text-gray-700 capitalize">{what}</span>
+            </div>
+            {entityData?.TIN && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">TIN</span>
+                <span className="font-medium text-gray-700">{entityData.TIN}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Status</span>
+              <span className="font-medium text-amber-700">Pending — retrying automatically</span>
+            </div>
+            {pending.attempts != null && pending.maxAttempts != null && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Attempt</span>
+                <span className="font-medium text-gray-700">{pending.attempts} of {pending.maxAttempts}</span>
+              </div>
+            )}
+            {nextAt && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Next attempt</span>
+                <span className="font-medium text-gray-700">{nextAt}</span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-500">
+            You don't need to resubmit. Your status on EmaraTax will update once
+            processing completes. You may close this window.
           </p>
         </div>
       </Shell>
