@@ -112,7 +112,7 @@ const PIPELINE_OUTBOUND: PipelineStage[] = [
   { key: "c4_response_not_expected", label: "C4 Response N/A", icon: CheckCircle, color: "green", track: "a", section: null },
   { key: "tdd_generating", label: "Generating TDD", icon: Shield, color: "purple", track: "b", section: "Track B — FTA Reporting (C5)" },
   { key: "tdd_generated", label: "TDD Generated", icon: Shield, color: "purple", track: "b", section: null },
-  { key: "fta_connector_not_configured", label: "FTA Connector (Staging)", icon: Clock, color: "gray", track: "b", section: null },
+  { key: "fta_connector_not_configured", label: "FTA Connector (C5)", icon: Network, color: "purple", track: "b", section: null },
   { key: "fta_submitting", label: "Submitting to FTA (C5)", icon: Shield, color: "purple", track: "b", section: null },
   { key: "fta_accepted", label: "FTA Accepted (C5)", icon: CheckCircle, color: "green", track: "b", section: null },
   { key: "send_failed", label: "Send Failed", icon: XCircle, color: "red", track: "shared", section: null },
@@ -341,6 +341,14 @@ export default function InvoiceDetailPage() {
 
   if (doc.tdd_generated) { completed.add("tdd_generating"); completed.add("tdd_generated"); }
   if (doc.tdd_sent) { completed.add("fta_connector_not_configured"); completed.add("fta_submitting"); }
+  // Track B from the role-01 TDD queue (GET /documents/{id}/tdd)
+  const rr01 = tdd?.reports.find(r => r.reporter_role === "01") ?? null;
+  const tddSt = rr01?.status ?? null;
+  if (tddSt && !["queued", "build_failed"].includes(tddSt)) { completed.add("tdd_generating"); completed.add("tdd_generated"); }
+  if (tddSt && ["transport_error", "awaiting_mls", "accepted", "rejected", "gave_up"].includes(tddSt)) completed.add("fta_connector_not_configured");
+  if (tddSt && ["awaiting_mls", "accepted", "rejected"].includes(tddSt)) completed.add("fta_submitting");
+  if (tddSt === "accepted") completed.add("fta_accepted");
+  const tddRejected = tddSt === "rejected";
   if (doc.mls_status) completed.add("acknowledged");
 
   const hasC3 = doc.direction === "outbound" && c3?.c3_confirmed;
@@ -789,7 +797,7 @@ export default function InvoiceDetailPage() {
               <div className="absolute left-3.5 top-4 bottom-4 w-px bg-gray-100" />
               <div className="space-y-0.5">
                 {pipeline.map((stage) => {
-                  if (FAILURE_KEYS.has(stage.key) && current !== stage.key) return null;
+                  if (FAILURE_KEYS.has(stage.key) && current !== stage.key && !(stage.key === "fta_rejected" && tddRejected)) return null;
                   if (stage.key === "c4_response_not_expected" && (completed.has("accepted_c4") || completed.has("rejected_c4"))) return null;
                   if ((stage.key === "accepted_c4" || stage.key === "awaiting_c4_response") && completed.has("c4_response_not_expected") && !completed.has("accepted_c4")) return null;
 
@@ -835,8 +843,23 @@ export default function InvoiceDetailPage() {
                               {c3.message_id}
                             </p>
                           )}
-                          {stage.key === "fta_connector_not_configured" && done && (
-                            <p className="text-[10px] text-gray-400 mt-0.5 italic">FTA sandbox pending</p>
+                          {stage.key === "fta_connector_not_configured" && tdd?.c5_target && (
+                            <p className="text-[10px] text-gray-500 mt-0.5 font-mono">
+                              {tdd.c5_target.ready ? `${tdd.c5_target.name} · ${tdd.c5_target.c5_id}` : "C5 not configured"}
+                            </p>
+                          )}
+                          {stage.key === "fta_submitting" && rr01 && ["transport_error", "gave_up", "held"].includes(rr01.status) && (
+                            <p className="text-[10px] text-amber-700 mt-0.5 truncate" title={rr01.last_error ?? ""}>
+                              {rr01.status === "gave_up" ? "Stopped" : "Retrying"} (attempt {rr01.attempts}){rr01.last_error ? `: ${rr01.last_error.slice(0, 60)}` : ""}
+                            </p>
+                          )}
+                          {stage.key === "fta_submitting" && rr01?.status === "awaiting_mls" && (
+                            <p className="text-[10px] text-blue-700 mt-0.5">Delivered, waiting for C5 MLS</p>
+                          )}
+                          {(stage.key === "fta_accepted" || stage.key === "fta_rejected") && rr01?.mls_code && (
+                            <p className="text-[10px] text-gray-500 mt-0.5 font-mono truncate" title={rr01.mls_ref ?? ""}>
+                              MLS {rr01.mls_code}{rr01.mls_at ? ` · ${new Date(rr01.mls_at).toLocaleString()}` : ""}
+                            </p>
                           )}
                           {event?.notes && (
                             <p className="text-[10px] text-gray-500 mt-0.5 font-mono leading-relaxed truncate" title={event.notes}>
