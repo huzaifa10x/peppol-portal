@@ -29,6 +29,24 @@ function getToken() {
         || localStorage.getItem("token") || "";
 }
 
+const ACCEPTED_EXT = [".json", ".xml", ".csv", ".xlsx", ".pdf"];
+
+const fileKey = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
+
+// Adds files to the list, skipping unsupported types and files already selected
+// (same name, size and modification time). Prevents the same file being uploaded twice.
+function mergeFiles(prev: File[], incoming: File[]): File[] {
+    const seen = new Set(prev.map(fileKey));
+    const out = [...prev];
+    for (const f of incoming) {
+        const ok = ACCEPTED_EXT.some(ext => f.name.toLowerCase().endsWith(ext));
+        if (!ok || seen.has(fileKey(f))) continue;
+        seen.add(fileKey(f));
+        out.push(f);
+    }
+    return out;
+}
+
 export default function BulkUpload() {
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
@@ -37,6 +55,7 @@ export default function BulkUpload() {
     const [sendResult, setSendResult] = useState<any>(null);
     const [dragging, setDragging] = useState(false);
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const validatedInvoices = invoices.filter(i => i.valid && !i.sent);
@@ -44,24 +63,38 @@ export default function BulkUpload() {
     const failedInvoices = invoices.filter(i => !i.valid);
 
     const handleUpload = async () => {
-        if (!files.length) return;
-        setUploading(true); setInvoices([]); setSendResult(null);
+        if (!files.length || uploading) return;
+        setUploading(true); setInvoices([]); setSendResult(null); setUploadError(null);
         const form = new FormData();
         files.forEach(f => form.append("files", f));
-        const r = await fetch(`${BASE}/invoices/bulk-upload`, {
-            method: "POST",
-            credentials: "include",
-            body: form
-        }).then(r => r.json()).catch(() => null);
-
-        if (r?.results) {
-            const all: InvoiceResult[] = r.results.flatMap((f: any) =>
+        try {
+            const res = await fetch(`${BASE}/invoices/bulk-upload`, {
+                method: "POST",
+                credentials: "include",
+                body: form
+            });
+            const r = await res.json().catch(() => null);
+            if (!res.ok) {
+                throw new Error(
+                    (r && (typeof r.detail === "string" ? r.detail : JSON.stringify(r.detail))) ||
+                    `Upload failed (HTTP ${res.status})`
+                );
+            }
+            const all: InvoiceResult[] = (r?.results || []).flatMap((f: any) =>
                 (f.results || []).map((inv: any) => ({ ...inv, sent: false }))
             );
-            setInvoices(all);
+            // one row per backend document, even if the response repeats a document
+            const byId = new Map<string, InvoiceResult>();
+            all.forEach(inv => { if (!byId.has(inv.document_id)) byId.set(inv.document_id, inv); });
+            setInvoices(Array.from(byId.values()));
+            if (byId.size === 0) setUploadError("No invoices were found in the uploaded files.");
+            setFiles([]);
+        } catch (e) {
+            setUploadError(e instanceof Error ? e.message : "Upload failed");
+        } finally {
+            setUploading(false);
+            if (inputRef.current) inputRef.current.value = "";
         }
-        setFiles([]);
-        setUploading(false);
     };
 
     const sendAll = async () => {
@@ -136,16 +169,7 @@ export default function BulkUpload() {
                         onDragLeave={() => setDragging(false)}
                         onDrop={e => {
                             e.preventDefault(); setDragging(false);
-                            const dropped = Array.from(e.dataTransfer.files)
-                                .filter(f =>
-                                    f.name.endsWith(".json") ||
-                                    f.name.endsWith(".xml") ||
-                                    f.name.endsWith(".csv") ||
-                                    f.name.endsWith(".xlsx") ||
-                                    f.name.endsWith(".pdf")
-                                )
-                                .filter(f => f.name.endsWith(".json") || f.name.endsWith(".xml"));
-                            setFiles(prev => [...prev, ...dropped]);
+                            setFiles(prev => mergeFiles(prev, Array.from(e.dataTransfer.files)));
                         }}
                         onClick={() => inputRef.current?.click()}
                         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
@@ -163,8 +187,11 @@ export default function BulkUpload() {
                         </p>
                         <input ref={inputRef} type="file" multiple accept=".json,.xml,.csv,.xlsx,.pdf"
                             className="hidden"
+                            onClick={e => e.stopPropagation()}
                             onChange={e => {
-                                setFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
+                                const picked = Array.from(e.target.files || []);
+                                setFiles(prev => mergeFiles(prev, picked));
+                                e.target.value = "";
                             }} />
                     </div>
 
@@ -192,7 +219,7 @@ export default function BulkUpload() {
                                             </span>
                                         </div>
                                         <button
-                                            onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                                            onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))}
                                             className="text-xs text-gray-400 hover:text-red-500"
                                         >
                                             remove
@@ -200,6 +227,12 @@ export default function BulkUpload() {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {uploadError && (
+                        <div className="mb-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                            {uploadError}
                         </div>
                     )}
 
@@ -245,7 +278,7 @@ export default function BulkUpload() {
                         </div>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => { setInvoices([]); setFiles([]); setSendResult(null); }}
+                                onClick={() => { setInvoices([]); setFiles([]); setSendResult(null); setUploadError(null); }}
                                 className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200
                   rounded-lg hover:bg-gray-50">
                                 Upload more

@@ -32,6 +32,21 @@ interface LineItem {
   vat_rate: number;
 }
 
+// PINT-AE: standard rated (S) must be 5%; 0% lines must be zero-rated (Z) or exempt (E).
+const VAT_OPTIONS = [
+  { key: "S5", label: "5%", category: "S", rate: 5 },
+  { key: "Z0", label: "0% (zero-rated)", category: "Z", rate: 0 },
+  { key: "E0", label: "Exempt", category: "E", rate: 0 },
+];
+const vatKey = (l: { vat_category_code: string; vat_rate: number }) =>
+  l.vat_category_code === "E" ? "E0" : l.vat_rate > 0 ? "S5" : "Z0";
+const categoryForRate = (rate: number) => (rate > 0 ? "S" : "Z");
+const num = (v: unknown, fallback: number) => {
+  if (typeof v === "number") return Number.isFinite(v) ? v : fallback;
+  const n = parseFloat(String(v ?? ""));
+  return Number.isFinite(n) ? n : fallback;
+};
+
 function fmt(n: number) {
   return new Intl.NumberFormat("en-AE", { minimumFractionDigits: 2 }).format(n);
 }
@@ -188,11 +203,11 @@ export default function CreateInvoicePage() {
       setLines(
         (t as any).line_items.map((li: any) => ({
           description: li.description ?? "",
-          quantity: parseFloat(li.quantity) || 1,
+          quantity: num(li.quantity, 1),
           unit_code: li.unit_code ?? "EA",
-          unit_price: parseFloat(li.unit_price) || 0,
-          vat_category_code: li.vat_category_code ?? "S",
-          vat_rate: parseFloat(li.vat_rate) || 5,
+          unit_price: num(li.unit_price, 0),
+          vat_rate: num(li.vat_rate, 5),
+          vat_category_code: li.vat_category_code ?? categoryForRate(num(li.vat_rate, 5)),
         }))
       );
     }
@@ -255,7 +270,13 @@ export default function CreateInvoicePage() {
         `${BASE}/invoices/${draftResult.document_id}/validate-draft`,
         { method: "POST", credentials: "include", }
       );
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        throw new Error(
+          (data && (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))) ||
+          `Validation request failed (HTTP ${res.status})`
+        );
+      }
       setValidateResult(data);
       if (data.valid) setStep(3);
     } catch (e: any) {
@@ -275,7 +296,13 @@ export default function CreateInvoicePage() {
         `${BASE}/invoices/${draftResult.document_id}/send-validated`,
         { method: "POST", credentials: "include", }
       );
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        throw new Error(
+          (data && (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))) ||
+          `Send request failed (HTTP ${res.status})`
+        );
+      }
       setSendResult(data);
     } catch (e: any) {
       setError(e.message);
@@ -311,7 +338,7 @@ export default function CreateInvoicePage() {
             {[
               ["Invoice ID", draftResult?.invoice_id],
               ["Status", sendResult.status],
-              ["Total Amount", `AED ${fmt(draftResult?.total ?? 0)}`],
+              ["Total Amount", `${form.currency_code} ${fmt(draftResult?.total ?? 0)}`],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between text-xs">
                 <span className="font-semibold text-gray-500 uppercase tracking-wider">
@@ -379,8 +406,8 @@ export default function CreateInvoicePage() {
         quantity: l.quantity,
         unit_code: l.unit_of_measure || "EA",
         unit_price: l.unit_price,
-        vat_category_code: "S",
-        vat_rate: l.vat_rate,
+        vat_category_code: l.vat_category_code ?? categoryForRate(num(l.vat_rate, 5)),
+        vat_rate: num(l.vat_rate, 5),
       })));
     }
   };
@@ -455,7 +482,10 @@ export default function CreateInvoicePage() {
             ].map((t) => (
               <button
                 key={t.v}
-                onClick={() => setDocType(t.v)}
+                onClick={() => {
+                  setDocType(t.v);
+                  setField("participant_type", t.v === "sb_invoice" ? "selfbilling" : "billing");
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${docType === t.v
                   ? "bg-white text-gray-900 shadow-2xs"
                   : "text-gray-600 hover:text-gray-900"
@@ -626,7 +656,11 @@ export default function CreateInvoicePage() {
                 </label>
                 <select
                   value={form.participant_type}
-                  onChange={(e) => setField("participant_type", e.target.value)}
+                  onChange={(e) => {
+                    setField("participant_type", e.target.value);
+                    if (e.target.value === "selfbilling") setDocType("sb_invoice");
+                    else if (docType === "sb_invoice") setDocType("invoice");
+                  }}
                   className="w-full px-3.5 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C01ED] focus:border-transparent shadow-2xs"
                 >
                   <option value="billing">Billing (PAE001045)</option>
@@ -720,14 +754,17 @@ export default function CreateInvoicePage() {
                     </div>
                     <div className="col-span-1">
                       <select
-                        value={line.vat_rate}
-                        onChange={(e) =>
-                          setLine(i, "vat_rate", parseFloat(e.target.value))
-                        }
+                        value={vatKey(line)}
+                        onChange={(e) => {
+                          const o = VAT_OPTIONS.find((v) => v.key === e.target.value) || VAT_OPTIONS[0];
+                          setLines((ls) => ls.map((l, idx) =>
+                            idx === i ? { ...l, vat_rate: o.rate, vat_category_code: o.category } : l));
+                        }}
                         className="w-full px-1 py-1.5 text-xs text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none"
                       >
-                        <option value={5}>5%</option>
-                        <option value={0}>0%</option>
+                        {VAT_OPTIONS.map((o) => (
+                          <option key={o.key} value={o.key}>{o.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-span-2 text-right text-xs font-bold text-gray-900 pr-1">
@@ -761,7 +798,7 @@ export default function CreateInvoicePage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs font-medium text-gray-600">
-                  <span>VAT (5%)</span>
+                  <span>VAT</span>
                   <span>
                     {form.currency_code} {fmt(taxTotal)}
                   </span>
@@ -833,9 +870,9 @@ export default function CreateInvoicePage() {
             <div className="space-y-2 text-xs mb-6 p-4 bg-gray-50/70 border border-gray-200/60 rounded-xl">
               {[
                 ["Invoice ID", draftResult?.invoice_id],
-                ["Subtotal", `AED ${fmt(draftResult?.subtotal ?? 0)}`],
-                ["VAT", `AED ${fmt(draftResult?.tax ?? 0)}`],
-                ["Total Payable", `AED ${fmt(draftResult?.total ?? 0)}`],
+                ["Subtotal", `${form.currency_code} ${fmt(draftResult?.subtotal ?? 0)}`],
+                ["VAT", `${form.currency_code} ${fmt(draftResult?.tax ?? 0)}`],
+                ["Total Payable", `${form.currency_code} ${fmt(draftResult?.total ?? 0)}`],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between">
                   <span className="text-gray-500 font-medium">{k}</span>
@@ -872,9 +909,15 @@ export default function CreateInvoicePage() {
                     key={i}
                     className="text-[11px] font-mono text-rose-700 bg-white rounded-lg p-2.5 mt-2 border border-rose-100"
                   >
-                    {e.slice(0, 150)}
+                    {e}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 flex items-center gap-2">
+                <XCircle size={15} className="shrink-0" /> {error}
               </div>
             )}
 
@@ -939,7 +982,7 @@ export default function CreateInvoicePage() {
                 ["Invoice ID", draftResult?.invoice_id],
                 ["Buyer Name", form.buyer_name],
                 ["Peppol ID", form.buyer_peppol_id],
-                ["Total Amount", `AED ${fmt(draftResult?.total ?? 0)}`],
+                ["Total Amount", `${form.currency_code} ${fmt(draftResult?.total ?? 0)}`],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between">
                   <span className="text-gray-500 font-medium">{k}</span>
