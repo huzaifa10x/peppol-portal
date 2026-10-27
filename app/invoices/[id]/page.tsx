@@ -17,7 +17,13 @@ interface StatusEvent { status: string; notes: string | null; created_at: string
 interface LineItem {
   id: string; description: string; quantity: number; unit_code: string;
   unit_price: number; line_amount: number; vat_rate: number; vat_amount: number;
+  vat_category_code?: string | null;
 }
+interface ValidationResult {
+  valid: boolean; error_count: number; errors: string[]; warnings?: string[];
+  variant?: string; validator?: string;
+}
+interface SendResult { sent: boolean; status?: string; notes?: string; c3_message_id?: string | null; detail?: string; }
 interface Doc {
   id: string; direction: string; doc_type: string; participant_type: string;
   status: string; invoice_number: string | null; issue_date: string | null;
@@ -30,6 +36,18 @@ interface Doc {
   c3_message_id: string | null; c3_receipt_timestamp: string | null;
   xml_filename: string | null; xml_size_bytes: number | null;
   buyer_peppol_id: string | null; seller_peppol_id: string | null;
+  customization_id?: string | null; profile_id?: string | null; raw_xml?: string | null;
+}
+
+const VAT_CATEGORY: Record<string, string> = {
+  S: "Standard", Z: "Zero-rated", E: "Exempt", O: "Out of scope", AE: "Reverse charge",
+};
+
+function docTypeLabel(d: Doc) {
+  const sb = d.participant_type === "selfbilling";
+  const cn = d.doc_type === "credit_note";
+  const code = sb ? (cn ? "261" : "389") : (cn ? "381" : "380");
+  return `${sb ? "Self-billing " : ""}${cn ? "credit note" : "invoice"} (${code})`;
 }
 
 interface C3Receipt {
@@ -55,6 +73,7 @@ const PIPELINE_INBOUND: PipelineStage[] = [
 const PIPELINE_OUTBOUND: PipelineStage[] = [
   { key: "draft", label: "Draft (C1)", icon: FileText, color: "gray", track: "shared", section: "Entry Lifecycle" },
   { key: "validated", label: "Validated (PINT-AE)", icon: CheckCircle, color: "blue", track: "shared", section: null },
+  { key: "validation_failed", label: "Validation Failed (PINT-AE)", icon: XCircle, color: "red", track: "shared", section: null },
   { key: "ready_for_dispatch", label: "Ready for Dispatch", icon: Send, color: "blue", track: "shared", section: null },
   { key: "discovery_in_progress", label: "SMP Discovery", icon: Network, color: "blue", track: "a", section: "Track A — Peppol Network (C2→C4)" },
   { key: "sending_as4", label: "Sending via AS4 (C2)", icon: Send, color: "blue", track: "a", section: null },
@@ -85,13 +104,15 @@ const DB_STATUS_TO_COMPLETED: Record<string, string[]> = {
     "tdd_generating", "tdd_generated", "fta_connector_not_configured",
   ],
   send_failed: ["draft", "validated", "ready_for_dispatch"],
+  validation_failed: ["draft"],
 };
 
-const FAILURE_KEYS = new Set(["send_failed", "discovery_failed", "delivery_failed", "rejected_c3", "rejected_c4", "tdd_generation_failed", "fta_rejected"]);
+const FAILURE_KEYS = new Set(["validation_failed", "send_failed", "discovery_failed", "delivery_failed", "rejected_c3", "rejected_c4", "tdd_generation_failed", "fta_rejected"]);
 
 const OVERALL_STATUS: Record<string, { label: string; color: string }> = {
   draft: { label: "DRAFT", color: "bg-gray-100 text-gray-700 border border-gray-200" },
-  validated: { label: "IN PROGRESS", color: "bg-purple-50 text-[#7C01ED] border border-purple-200" },
+  validated: { label: "READY TO SEND", color: "bg-purple-50 text-[#7C01ED] border border-purple-200" },
+  validation_failed: { label: "VALIDATION FAILED", color: "bg-rose-50 text-rose-800 border border-rose-200" },
   sent: { label: "TECHNICALLY COMPLETE", color: "bg-teal-50 text-teal-800 border border-teal-200" },
   send_failed: { label: "ACTION REQUIRED", color: "bg-rose-50 text-rose-800 border border-rose-200" },
   delivery_failed: { label: "ACTION REQUIRED", color: "bg-rose-50 text-rose-800 border border-rose-200" },
@@ -125,6 +146,11 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [resending, setResending] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<SendResult | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -173,11 +199,55 @@ export default function InvoiceDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const resend = async () => {
-    setResending(true);
-    await fetch(`${BASE}/invoices/${id}/send-validated`, { method: "POST", credentials: "include" });
-    await load();
-    setResending(false);
+  const errText = (data: unknown, status: number) => {
+    const d = (data as { detail?: unknown } | null)?.detail;
+    return typeof d === "string" ? d : d ? JSON.stringify(d) : `Request failed (HTTP ${status})`;
+  };
+
+  // send_failed documents must go through /resend (it resets the status first)
+  const send = async (retry: boolean) => {
+    const setBusy = retry ? setResending : setSending;
+    setBusy(true);
+    setActionError(null); setSendResult(null);
+    try {
+      const res = await fetch(`${BASE}/invoices/${id}/${retry ? "resend" : "send-validated"}`,
+        { method: "POST", credentials: "include" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(errText(data, res.status));
+      setSendResult(data);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Send failed");
+    } finally {
+      await load();
+      setBusy(false);
+    }
+  };
+  const resend = () => send(true);
+
+  const validate = async () => {
+    setValidating(true); setActionError(null);
+    try {
+      const res = await fetch(`${BASE}/invoices/${id}/validate-draft`, { method: "POST", credentials: "include" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(errText(data, res.status));
+      setValidation(data);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Validation failed");
+    } finally {
+      await load();
+      setValidating(false);
+    }
+  };
+
+  const downloadXml = () => {
+    if (!doc?.raw_xml) return;
+    const blob = new Blob([doc.raw_xml], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = doc.xml_filename || `${doc.invoice_number ?? id}.xml`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
   };
 
   const syncPipeline = async () => {
@@ -250,14 +320,31 @@ export default function InvoiceDetailPage() {
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${doc.direction === "outbound" ? "bg-purple-50 text-[#7C01ED] border border-purple-200" : "bg-blue-50 text-blue-700 border border-blue-200"}`}>
               {doc.direction}
             </span>
-            <span className="text-xs text-gray-500">{doc.doc_type.replace("_", " ")}</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-xs text-gray-500">{doc.participant_type}</span>
+            <span className="text-xs text-gray-500">{docTypeLabel(doc)}</span>
             <span className="text-gray-300">·</span>
             <span className="text-xs text-gray-400 font-mono">{doc.id.slice(0, 8)}…</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {doc.raw_xml && (
+            <button onClick={downloadXml}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 bg-white text-xs font-semibold text-gray-700"
+              title="Download UBL XML">
+              <Download size={13} /> XML
+            </button>
+          )}
+          {doc.direction === "outbound" && ["draft", "validated", "validation_failed", "send_failed"].includes(current) && (
+            <button onClick={validate} disabled={validating}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-purple-200 hover:bg-purple-50 bg-white text-xs font-semibold text-[#7C01ED] disabled:opacity-50">
+              <Shield size={13} className={validating ? "animate-pulse" : ""} /> {validating ? "Validating…" : "Validate"}
+            </button>
+          )}
+          {doc.direction === "outbound" && current === "validated" && (
+            <button onClick={() => send(false)} disabled={sending}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#7C01ED] hover:bg-purple-800 text-white text-xs font-bold disabled:opacity-50">
+              <Send size={13} className={sending ? "animate-pulse" : ""} /> {sending ? "Sending…" : "Send"}
+            </button>
+          )}
           <button onClick={syncPipeline} disabled={syncing}
             className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 bg-white"
             title="Sync pipeline">
@@ -268,6 +355,36 @@ export default function InvoiceDetailPage() {
           </span>
         </div>
       </div>
+
+      {actionError && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 break-words">
+          {actionError}
+        </div>
+      )}
+      {sendResult && (
+        <div className={`mb-4 px-4 py-3 rounded-xl border text-xs break-words ${sendResult.sent
+          ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800"}`}>
+          <span className="font-bold">{sendResult.sent ? "Sent via AS4." : "Send failed."}</span>{" "}
+          {sendResult.c3_message_id && <span className="font-mono">C3 message {sendResult.c3_message_id}. </span>}
+          {sendResult.notes}
+        </div>
+      )}
+      {validation && (
+        <div className={`mb-4 rounded-xl border p-4 ${validation.valid ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+          <div className={`text-xs font-bold mb-1 ${validation.valid ? "text-emerald-800" : "text-rose-800"}`}>
+            {validation.valid
+              ? "PINT-AE 1.0.4 validation passed"
+              : `PINT-AE 1.0.4 validation failed - ${validation.error_count} error${validation.error_count === 1 ? "" : "s"}`}
+            {validation.variant && <span className="font-normal text-gray-500"> · {validation.variant} rules</span>}
+          </div>
+          {validation.errors.map((e, i) => (
+            <p key={i} className="text-[11px] font-mono text-rose-700 bg-white/60 rounded px-2 py-1 mt-1 break-words">{e}</p>
+          ))}
+          {(validation.warnings ?? []).map((w, i) => (
+            <p key={`w${i}`} className="text-[11px] font-mono text-amber-700 bg-white/60 rounded px-2 py-1 mt-1 break-words">{w}</p>
+          ))}
+        </div>
+      )}
 
       {/* ── Two-column layout: LEFT=invoice details, RIGHT=pipeline ── */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
@@ -281,7 +398,8 @@ export default function InvoiceDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-2">
-                  <Building2 size={13} className="text-[#7C01ED]" /> Supplier
+                  <Building2 size={13} className="text-[#7C01ED]" />
+                  {doc.participant_type === "selfbilling" ? "Supplier (receives the self-billed document)" : "Supplier"}
                 </div>
                 {[
                   [doc.supplier_name, "Name"],
@@ -297,7 +415,8 @@ export default function InvoiceDetailPage() {
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 mb-2">
-                  <User size={13} className="text-[#7C01ED]" /> Buyer
+                  <User size={13} className="text-[#7C01ED]" />
+                  {doc.participant_type === "selfbilling" ? "Buyer (issuer)" : "Buyer"}
                 </div>
                 {[
                   [doc.buyer_name, "Name"],
@@ -323,7 +442,10 @@ export default function InvoiceDetailPage() {
                 ["Issue Date", doc.issue_date, Calendar],
                 ["Due Date", doc.due_date, Calendar],
                 ["Received", new Date(doc.received_at).toLocaleDateString("en-AE"), Clock],
+                ["Document Type", docTypeLabel(doc), FileText],
                 ["Currency", doc.currency_code, FileText],
+                ["Specification", doc.customization_id, Shield],
+                ["Process", doc.profile_id, Network],
                 ["File", doc.xml_filename, FileText],
               ].filter(([, v]) => v).map(([k, v, Icon]) => (
                 <div key={k as string} className="flex items-start gap-2">
@@ -351,7 +473,8 @@ export default function InvoiceDetailPage() {
                       <th className="text-left text-[10px] text-gray-400 font-medium pb-2 pr-3">Description</th>
                       <th className="text-right text-[10px] text-gray-400 font-medium pb-2 px-2">Qty</th>
                       <th className="text-right text-[10px] text-gray-400 font-medium pb-2 px-2">Unit Price</th>
-                      <th className="text-right text-[10px] text-gray-400 font-medium pb-2 px-2">VAT %</th>
+                      <th className="text-right text-[10px] text-gray-400 font-medium pb-2 px-2">VAT</th>
+                      <th className="text-right text-[10px] text-gray-400 font-medium pb-2 px-2">VAT Amt</th>
                       <th className="text-right text-[10px] text-gray-400 font-medium pb-2 pl-2">Amount</th>
                     </tr>
                   </thead>
@@ -361,7 +484,12 @@ export default function InvoiceDetailPage() {
                         <td className="py-2 pr-3 text-gray-800 font-medium">{li.description}</td>
                         <td className="py-2 px-2 text-right text-gray-600">{li.quantity} {li.unit_code}</td>
                         <td className="py-2 px-2 text-right text-gray-600 font-mono">{fmt(li.unit_price)}</td>
-                        <td className="py-2 px-2 text-right text-gray-600">{li.vat_rate}%</td>
+                        <td className="py-2 px-2 text-right text-gray-600">
+                          {li.vat_category_code && li.vat_category_code !== "S"
+                            ? `${VAT_CATEGORY[li.vat_category_code] ?? li.vat_category_code}${li.vat_category_code === "Z" ? " 0%" : ""}`
+                            : `${Number(li.vat_rate)}%`}
+                        </td>
+                        <td className="py-2 px-2 text-right text-gray-600 font-mono">{fmt(Number(li.vat_amount ?? 0))}</td>
                         <td className="py-2 pl-2 text-right text-gray-800 font-semibold font-mono">{fmt(li.line_amount)}</td>
                       </tr>
                     ))}
@@ -380,8 +508,8 @@ export default function InvoiceDetailPage() {
                 <span className="font-mono">{doc.tax_exclusive_amount ? fmt(doc.tax_exclusive_amount) : "—"}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>VAT (5%)</span>
-                <span className="font-mono">{doc.tax_amount ? fmt(doc.tax_amount) : "—"}</span>
+                <span>VAT</span>
+                <span className="font-mono">{doc.tax_amount != null ? fmt(doc.tax_amount) : "—"}</span>
               </div>
               <div className="flex justify-between font-bold text-sm text-gray-900 pt-2 border-t border-gray-200">
                 <span>Total Payable</span>
@@ -473,8 +601,10 @@ export default function InvoiceDetailPage() {
                 <div className="flex items-center gap-2 text-gray-500 text-xs">
                   <AlertCircle size={14} />
                   {current === "send_failed"
-                    ? "No C3 receipt — document failed to transmit."
-                    : "Awaiting AS4 transmission and C3 receipt."}
+                    ? `No C3 receipt — document failed to transmit.${[...history].reverse().find(h => h.status === "send_failed")?.notes ? " " + [...history].reverse().find(h => h.status === "send_failed")!.notes : ""}`
+                    : current === "validation_failed"
+                      ? "Not sent — fix the validation errors first (use Validate to see them)."
+                      : "Awaiting AS4 transmission and C3 receipt."}
                 </div>
               )}
             </div>
