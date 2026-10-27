@@ -23,6 +23,33 @@ interface ValidationResult {
   valid: boolean; error_count: number; errors: string[]; warnings?: string[];
   variant?: string; validator?: string;
 }
+interface TddAttempt {
+  attempt_no: number; sbdh_id: string; target: string | null; c5_id: string | null;
+  started_at: string | null; result: string | null; detail: string | null; support_id: string | null;
+}
+interface TddReport {
+  id: number; reporter_role: string; status: string; target: string | null; c5_id: string | null;
+  reporting_party: string | null; attempts: number; next_attempt_at: string | null;
+  last_error: string | null; last_support_id: string | null; mls_ref: string | null;
+  mls_code: string | null; mls_description: string | null; mls_at: string | null;
+  tdd_errors: string | null; attempts_log?: TddAttempt[];
+}
+interface TddInfo {
+  reports: TddReport[];
+  c5_target: { name: string | null; c5_id: string | null; ready: boolean; reason: string | null };
+}
+const TDD_STATUS: Record<string, { label: string; cls: string }> = {
+  queued: { label: "Queued", cls: "text-gray-500" },
+  built: { label: "Built, waiting to send", cls: "text-gray-600" },
+  held: { label: "Held (C5 not configured)", cls: "text-amber-700" },
+  transport_error: { label: "Send failed, will retry", cls: "text-amber-700" },
+  awaiting_mls: { label: "Sent, waiting for C5 MLS", cls: "text-blue-700" },
+  accepted: { label: "Accepted by C5", cls: "text-emerald-700" },
+  rejected: { label: "Rejected by C5", cls: "text-rose-700" },
+  build_failed: { label: "TDD build failed", cls: "text-rose-700" },
+  gave_up: { label: "Stopped after max retries", cls: "text-rose-700" },
+};
+const TDD_RETRYABLE = new Set(["transport_error", "gave_up", "held", "build_failed", "rejected", "awaiting_mls"]);
 interface SendResult { sent: boolean; status?: string; notes?: string; c3_message_id?: string | null; detail?: string; }
 interface Doc {
   id: string; direction: string; doc_type: string; participant_type: string;
@@ -151,6 +178,27 @@ export default function InvoiceDetailPage() {
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<SendResult | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [tdd, setTdd] = useState<TddInfo | null>(null);
+  const [tddRetrying, setTddRetrying] = useState(false);
+
+  const loadTdd = useCallback(async () => {
+    try {
+      const r = await fetch(`${BASE}/documents/${id}/tdd`, { credentials: "include" });
+      if (r.ok) setTdd(await r.json());
+    } catch { /* endpoint not deployed yet */ }
+  }, [id]);
+
+  const retryTdd = async () => {
+    setTddRetrying(true); setActionError(null);
+    try {
+      const r = await fetch(`${BASE}/documents/${id}/tdd/retry`, { method: "POST", credentials: "include" });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) setActionError(j.detail || `TDD retry failed (HTTP ${r.status})`);
+      await loadTdd();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "TDD retry failed");
+    } finally { setTddRetrying(false); }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -194,8 +242,9 @@ export default function InvoiceDetailPage() {
       const liRes = await fetch(`${BASE}/documents/${id}/line-items`, { credentials: "include" }).then(r => r.json());
       setLineItems(liRes.line_items ?? liRes.items ?? []);
     } catch { /* endpoint may not exist */ }
+    await loadTdd();
     setLoading(false);
-  }, [id]);
+  }, [id, loadTdd]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -612,30 +661,105 @@ export default function InvoiceDetailPage() {
 
           {/* Tax reporting */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Tax Reporting (Track B)</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tax Reporting (Track B)</h2>
+              <button onClick={loadTdd} className="text-gray-400 hover:text-gray-600" title="Refresh">
+                <RefreshCw size={13} />
+              </button>
+            </div>
             <div className="space-y-3 text-xs">
-              {([
-                ["TDD Generated", doc.tdd_generated],
-                ["Sent to FTA C5", doc.tdd_sent],
-              ] as [string, boolean][]).map(([label, val]) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-gray-600 font-medium">{label}</span>
-                  {val
-                    ? <span className="flex items-center gap-1 text-emerald-700 font-bold"><CheckCircle size={13} /> Yes</span>
-                    : <span className="flex items-center gap-1 text-gray-400"><Clock size={13} /> Pending</span>}
-                </div>
-              ))}
-              {doc.mls_status && (
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                  <span className="text-gray-600 font-medium">MLS Status</span>
-                  <span className="text-emerald-700 font-mono font-bold">{doc.mls_status}</span>
+              {tdd?.c5_target && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 font-medium">C5 target</span>
+                  <span className={`font-mono ${tdd.c5_target.ready ? "text-gray-800" : "text-amber-700"}`}
+                        title={tdd.c5_target.reason || ""}>
+                    {tdd.c5_target.ready ? `${tdd.c5_target.name} · ${tdd.c5_target.c5_id}` : "not configured"}
+                  </span>
                 </div>
               )}
-              {doc.tdd_sent && (
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-[11px] text-gray-400 italic">
-                    FTA sandbox credentials pending — TDD queued for C5 submission.
-                  </p>
+              {(tdd?.reports ?? []).map(r => {
+                const st = TDD_STATUS[r.status] ?? { label: r.status, cls: "text-gray-600" };
+                return (
+                  <div key={r.id} className="pt-2 border-t border-gray-100 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 font-medium">
+                        TDD {r.reporter_role === "01" ? "(sender, role 01)" : `(role ${r.reporter_role})`}
+                      </span>
+                      <span className={`font-bold ${st.cls}`}>{st.label}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-500">
+                      <span>Attempts</span><span className="font-mono">{r.attempts}</span>
+                    </div>
+                    {r.reporting_party && (
+                      <div className="flex items-center justify-between text-gray-500">
+                        <span>Reporting party</span><span className="font-mono">{r.reporting_party}</span>
+                      </div>
+                    )}
+                    {r.mls_code && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 font-medium">C5 MLS</span>
+                        <span className={`font-mono font-bold ${r.mls_code === "RE" ? "text-rose-700" : "text-emerald-700"}`}>
+                          {r.mls_code}
+                        </span>
+                      </div>
+                    )}
+                    {r.mls_description && <p className="text-[11px] text-gray-500 break-words">{r.mls_description}</p>}
+                    {r.last_error && !["accepted"].includes(r.status) && (
+                      <p className="text-[11px] text-rose-700 break-words">
+                        {r.last_error}{r.last_support_id ? ` (support ID ${r.last_support_id})` : ""}
+                      </p>
+                    )}
+                    {r.tdd_errors && <p className="text-[11px] text-rose-700 break-words whitespace-pre-line">{r.tdd_errors}</p>}
+                    {r.next_attempt_at && TDD_RETRYABLE.has(r.status) && r.status !== "rejected" && (
+                      <p className="text-[11px] text-gray-400">Next attempt: {new Date(r.next_attempt_at).toLocaleString()}</p>
+                    )}
+                    {(r.attempts_log ?? []).length > 0 && (
+                      <details className="text-[11px] text-gray-500">
+                        <summary className="cursor-pointer">Attempt log</summary>
+                        <ul className="mt-1 space-y-1">
+                          {(r.attempts_log ?? []).map(a => (
+                            <li key={a.sbdh_id} className="font-mono break-all">
+                              #{a.attempt_no} {a.started_at ? new Date(a.started_at).toLocaleString() : ""} · {a.result ?? "-"}
+                              {a.support_id ? ` · support ${a.support_id}` : ""} · {a.sbdh_id}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    {TDD_RETRYABLE.has(r.status) && (
+                      <button onClick={retryTdd} disabled={tddRetrying}
+                        className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-2 border border-purple-300 text-purple-700 hover:bg-purple-50 rounded-lg text-xs font-bold disabled:opacity-50">
+                        <RotateCcw size={12} className={tddRetrying ? "animate-spin" : ""} />
+                        {tddRetrying ? "Scheduling…" : "Retry TDD"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {tdd && tdd.reports.length === 0 && (
+                <p className="text-[11px] text-gray-400">
+                  {doc.direction === "outbound"
+                    ? "No TDD yet — it is queued automatically once the document is delivered."
+                    : "Received documents are reported by the Access Point (role 02)."}
+                </p>
+              )}
+              {!tdd && (
+                ([
+                  ["TDD Generated", doc.tdd_generated],
+                  ["Sent to FTA C5", doc.tdd_sent],
+                ] as [string, boolean][]).map(([label, val]) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-gray-600 font-medium">{label}</span>
+                    {val
+                      ? <span className="flex items-center gap-1 text-emerald-700 font-bold"><CheckCircle size={13} /> Yes</span>
+                      : <span className="flex items-center gap-1 text-gray-400"><Clock size={13} /> Pending</span>}
+                  </div>
+                ))
+              )}
+              {doc.mls_status && (
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <span className="text-gray-600 font-medium">Buyer MLS</span>
+                  <span className="text-emerald-700 font-mono font-bold">{doc.mls_status}</span>
                 </div>
               )}
             </div>
