@@ -30,16 +30,23 @@ interface LineItem {
   unit_price: number;
   vat_category_code: string;
   vat_rate: number;
+  exemption_code?: string;
 }
 
 // PINT-AE: standard rated (S) must be 5%; 0% lines must be zero-rated (Z) or exempt (E).
+// Exempt lines need a UAE exemption reason code (ibr-167-ae, Aligned-TaxExemptionCodes).
 const VAT_OPTIONS = [
-  { key: "S5", label: "5%", category: "S", rate: 5 },
-  { key: "Z0", label: "0% (zero-rated)", category: "Z", rate: 0 },
-  { key: "E0", label: "Exempt", category: "E", rate: 0 },
+  { key: "S5", label: "5%", category: "S", rate: 5, exemption: "" },
+  { key: "Z0", label: "0% (zero-rated)", category: "Z", rate: 0, exemption: "" },
+  { key: "E:DL8.46.1", label: "Exempt - financial services", category: "E", rate: 0, exemption: "DL8.46.1" },
+  { key: "E:DL8.46.2", label: "Exempt - residential property", category: "E", rate: 0, exemption: "DL8.46.2" },
+  { key: "E:DL8.46.3", label: "Exempt - bare land", category: "E", rate: 0, exemption: "DL8.46.3" },
+  { key: "E:DL8.46.4", label: "Exempt - local passenger transport", category: "E", rate: 0, exemption: "DL8.46.4" },
 ];
-const vatKey = (l: { vat_category_code: string; vat_rate: number }) =>
-  l.vat_category_code === "E" ? "E0" : l.vat_rate > 0 ? "S5" : "Z0";
+const vatKey = (l: { vat_category_code: string; vat_rate: number; exemption_code?: string }) =>
+  l.vat_category_code === "E" ? `E:${l.exemption_code || "DL8.46.1"}` : l.vat_rate > 0 ? "S5" : "Z0";
+const isSelfBilling = (t: string) => t.startsWith("sb_");
+const isCreditNote = (t: string) => t.includes("credit");
 const categoryForRate = (rate: number) => (rate > 0 ? "S" : "Z");
 const num = (v: unknown, fallback: number) => {
   if (typeof v === "number") return Number.isFinite(v) ? v : fallback;
@@ -157,6 +164,9 @@ export default function CreateInvoicePage() {
     note: "",
     buyer_reference: "",
     participant_type: "billing",
+    billing_reference_id: "",
+    billing_reference_date: "",
+    payee_account: "",
   });
 
   const [lines, setLines] = useState<LineItem[]>([
@@ -399,7 +409,12 @@ export default function CreateInvoicePage() {
       note: data.notes || data.note || f.note, // Changed `notes` to `note`
       buyer_reference: data.buyer_reference || f.buyer_reference,
     }));
-    setDocType(data.invoice_type === "CREDIT_NOTE" ? "credit_note" : "invoice");
+    {
+      const cn = data.invoice_type === "CREDIT_NOTE" || data.doc_type === "credit_note";
+      const sb = data.participant_type === "selfbilling";
+      setDocType(sb ? (cn ? "sb_credit_note" : "sb_invoice") : (cn ? "credit_note" : "invoice"));
+      setField("participant_type", sb ? "selfbilling" : "billing");
+    }
     if (data.line_items?.length) {
       setLines(data.line_items.map((l: any) => ({
         description: l.description,
@@ -408,6 +423,7 @@ export default function CreateInvoicePage() {
         unit_price: l.unit_price,
         vat_category_code: l.vat_category_code ?? categoryForRate(num(l.vat_rate, 5)),
         vat_rate: num(l.vat_rate, 5),
+        exemption_code: l.exemption_code || undefined,
       })));
     }
   };
@@ -479,12 +495,13 @@ export default function CreateInvoicePage() {
               { v: "invoice", l: "Invoice" },
               { v: "credit_note", l: "Credit Note" },
               { v: "sb_invoice", l: "Self-Billing" },
+              { v: "sb_credit_note", l: "Self-Billing CN" },
             ].map((t) => (
               <button
                 key={t.v}
                 onClick={() => {
                   setDocType(t.v);
-                  setField("participant_type", t.v === "sb_invoice" ? "selfbilling" : "billing");
+                  setField("participant_type", isSelfBilling(t.v) ? "selfbilling" : "billing");
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${docType === t.v
                   ? "bg-white text-gray-900 shadow-2xs"
@@ -511,7 +528,7 @@ export default function CreateInvoicePage() {
                   <Building2 size={16} />
                 </div>
                 <h2 className="text-sm font-bold text-gray-900">
-                  Supplier Details
+                  {isSelfBilling(docType) ? "Your Company (Buyer, issuer)" : "Supplier Details"}
                 </h2>
               </div>
               <div className="space-y-4">
@@ -547,7 +564,7 @@ export default function CreateInvoicePage() {
                   <UserCheck size={16} />
                 </div>
                 <h2 className="text-sm font-bold text-gray-900">
-                  Buyer Details
+                  {isSelfBilling(docType) ? "Supplier (Seller) Details" : "Buyer Details"}
                 </h2>
               </div>
               <div className="space-y-4">
@@ -658,13 +675,14 @@ export default function CreateInvoicePage() {
                   value={form.participant_type}
                   onChange={(e) => {
                     setField("participant_type", e.target.value);
-                    if (e.target.value === "selfbilling") setDocType("sb_invoice");
-                    else if (docType === "sb_invoice") setDocType("invoice");
+                    const cn = isCreditNote(docType);
+                    if (e.target.value === "selfbilling") setDocType(cn ? "sb_credit_note" : "sb_invoice");
+                    else setDocType(cn ? "credit_note" : "invoice");
                   }}
                   className="w-full px-3.5 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C01ED] focus:border-transparent shadow-2xs"
                 >
-                  <option value="billing">Billing (PAE001045)</option>
-                  <option value="selfbilling">Self-Billing (2222)</option>
+                  <option value="billing">Billing (we are the seller)</option>
+                  <option value="selfbilling">Self-billing (we are the buyer)</option>
                 </select>
               </div>
               <InputField
@@ -673,7 +691,40 @@ export default function CreateInvoicePage() {
                 onChange={(v) => setField("note", v)}
                 placeholder="Tax invoice details"
               />
+              {!isCreditNote(docType) && (
+                <InputField
+                  label="Payee IBAN (Optional)"
+                  value={form.payee_account}
+                  onChange={(v) => setField("payee_account", v)}
+                  placeholder="AE070260001000006892201"
+                  mono
+                />
+              )}
+              {isCreditNote(docType) && (
+                <>
+                  <InputField
+                    label="Original Invoice No."
+                    value={form.billing_reference_id}
+                    onChange={(v) => setField("billing_reference_id", v)}
+                    placeholder="INV-KASA-XXXXXXXX"
+                    mono
+                    required
+                  />
+                  <InputField
+                    label="Original Invoice Date"
+                    value={form.billing_reference_date}
+                    onChange={(v) => setField("billing_reference_date", v)}
+                    type="date"
+                  />
+                </>
+              )}
             </div>
+            {isSelfBilling(docType) && (
+              <p className="mt-3 text-xs text-gray-500">
+                Self-billing: your company is the buyer and issues this document on behalf of the
+                supplier entered in the counterparty section (PINT-AE self-billing 389 / 261).
+              </p>
+            )}
           </div>
 
           {/* Line Items Card */}
@@ -758,7 +809,8 @@ export default function CreateInvoicePage() {
                         onChange={(e) => {
                           const o = VAT_OPTIONS.find((v) => v.key === e.target.value) || VAT_OPTIONS[0];
                           setLines((ls) => ls.map((l, idx) =>
-                            idx === i ? { ...l, vat_rate: o.rate, vat_category_code: o.category } : l));
+                            idx === i ? { ...l, vat_rate: o.rate, vat_category_code: o.category,
+                              exemption_code: o.exemption || undefined } : l));
                         }}
                         className="w-full px-1 py-1.5 text-xs text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none"
                       >

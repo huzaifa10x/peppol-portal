@@ -19,6 +19,9 @@ type InvoiceResult = {
     buyer: string;
     total: number;
     currency: string;
+    note?: string;
+    doc_type?: string;
+    participant_type?: string;
     sent?: boolean;
     c3_message_id?: string;
     sending?: boolean;
@@ -160,8 +163,9 @@ export default function BulkUpload() {
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h2 className="text-base font-bold text-gray-900 mb-1">Bulk upload</h2>
                     <p className="text-xs text-gray-400 mb-4">
-                        Upload JSON (single invoice or array) or UBL XML files.
-                        Each file is validated automatically after upload.
+                        Upload UBL XML, JSON, CSV or XLSX files (CSV/XLSX rows with the same
+                        invoice_number become one invoice). Every document is validated against
+                        the official PINT-AE 1.0.4 rules.
                     </p>
 
                     <div
@@ -332,8 +336,14 @@ export default function BulkUpload() {
                                                         : inv.valid
                                                             ? "bg-green-100 text-green-700"
                                                             : "bg-red-100 text-red-700"}`}>
-                                                    {inv.sent ? "sent" : inv.status.replace("_", " ")}
+                                                    {inv.sent ? "sent" : (inv.status || "failed").replace("_", " ")}
                                                 </span>
+                                                {inv.doc_type && (
+                                                    <span className="text-xs text-gray-400">
+                                                        {inv.participant_type === "selfbilling" ? "self-billing " : ""}
+                                                        {inv.doc_type.replace("_", " ")}
+                                                    </span>
+                                                )}
                                                 {inv.c3_message_id && (
                                                     <span className="text-xs text-gray-400 font-mono truncate max-w-[140px]">
                                                         C3: {inv.c3_message_id.slice(0, 8)}...
@@ -347,6 +357,9 @@ export default function BulkUpload() {
                                                         { minimumFractionDigits: 2 })}
                                                 </span>
                                             </p>
+                                            {inv.note && (
+                                                <p className="text-xs text-amber-600 mt-0.5">{inv.note}</p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -364,7 +377,7 @@ export default function BulkUpload() {
                                                     : <ChevronDown size={12} />}
                                             </button>
                                         )}
-                                        {inv.valid && !inv.sent && (
+                                        {inv.valid && !inv.sent && !inv.document_id.includes(":") && (
                                             <button
                                                 onClick={() => sendOne(inv.document_id)}
                                                 disabled={inv.sending || sending}
