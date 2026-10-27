@@ -23,6 +23,7 @@ type InvoiceResult = {
     doc_type?: string;
     participant_type?: string;
     sent?: boolean;
+    send_error?: string | null;
     c3_message_id?: string;
     sending?: boolean;
 };
@@ -123,7 +124,7 @@ export default function BulkUpload() {
                 if (!res) return inv;
                 return {
                     ...inv, sent: res.sent, c3_message_id: res.c3_message_id,
-                    status: res.status, sending: false
+                    status: res.status, sending: false, send_error: res.sent ? null : (res.error || res.notes)
                 };
             }));
             setSendResult(r);
@@ -150,7 +151,8 @@ export default function BulkUpload() {
             i.document_id === doc_id
                 ? {
                     ...i, sent: res?.sent, c3_message_id: res?.c3_message_id,
-                    status: res?.status, sending: false
+                    status: res?.status || "send_failed", sending: false,
+                    send_error: res?.sent ? null : (res?.error || res?.notes || "Send request failed")
                 }
                 : i
         ));
@@ -357,6 +359,9 @@ export default function BulkUpload() {
                                                         { minimumFractionDigits: 2 })}
                                                 </span>
                                             </p>
+                                            {inv.send_error && (
+                                                <p className="text-xs text-red-600 mt-0.5 break-words">{inv.send_error}</p>
+                                            )}
                                             {inv.note && (
                                                 <p className="text-xs text-amber-600 mt-0.5">{inv.note}</p>
                                             )}
