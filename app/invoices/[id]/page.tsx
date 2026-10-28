@@ -33,6 +33,15 @@ interface TddReport {
   last_error: string | null; last_support_id: string | null; mls_ref: string | null;
   mls_code: string | null; mls_description: string | null; mls_at: string | null;
   tdd_errors: string | null; attempts_log?: TddAttempt[];
+  retryable?: boolean; tdt?: string | null; tdd_sbdh_id?: string | null;
+}
+// Received documents (GET /documents/{id}/inbound)
+interface InboundInfo {
+  sbdh_id: string | null; message_id: string | null; sender: string | null; receiver: string | null;
+  received_at: string | null; valid: boolean | null; errors: string[];
+  rr02_tdd_id: string | null; rr02_state: string | null; rr02_tdt: string | null;
+  rr02_mls_code: string | null; rr02_mls_at: string | null;
+  c3_mls_code: string | null; c3_mls_sent: boolean | null;
 }
 interface TddInfo {
   reports: TddReport[];
@@ -90,11 +99,14 @@ interface PipelineStage {
 }
 
 const PIPELINE_INBOUND: PipelineStage[] = [
-  { key: "received", label: "Received", icon: FileText, color: "blue", track: "shared" },
-  { key: "validated", label: "Validated (PINT-AE)", icon: CheckCircle, color: "blue", track: "shared" },
-  { key: "tdd_generated", label: "TDD Generated", icon: Shield, color: "purple", track: "b" },
-  { key: "tdd_sent", label: "TDD Sent to FTA C5", icon: Send, color: "purple", track: "b" },
-  { key: "acknowledged", label: "MLS Acknowledged", icon: CheckCircle, color: "green", track: "a" },
+  { key: "received", label: "Received via AS4 (C3)", icon: FileText, color: "blue", track: "shared", section: "Track A — Peppol Network (C2→C3)" },
+  { key: "validated", label: "Validated (PINT-AE)", icon: CheckCircle, color: "blue", track: "shared", section: null },
+  { key: "validation_failed", label: "Validation Failed (PINT-AE)", icon: XCircle, color: "red", track: "shared", section: null },
+  { key: "acknowledged", label: "MLS to Supplier AP (C3→C2)", icon: CheckCircle, color: "green", track: "a", section: null },
+  { key: "tdd_generated", label: "TDD Generated (role 02)", icon: Shield, color: "purple", track: "b", section: "Track B — FTA Reporting (C5)" },
+  { key: "tdd_sent", label: "TDD Sent to FTA (C5)", icon: Send, color: "purple", track: "b", section: null },
+  { key: "fta_accepted", label: "FTA Accepted (C5)", icon: CheckCircle, color: "green", track: "b", section: null },
+  { key: "fta_rejected", label: "FTA Rejected", icon: XCircle, color: "red", track: "b", section: null },
 ];
 
 const PIPELINE_OUTBOUND: PipelineStage[] = [
@@ -147,6 +159,11 @@ const OVERALL_STATUS: Record<string, { label: string; color: string }> = {
   accepted_c4: { label: "COMPLETE", color: "bg-emerald-50 text-emerald-800 border border-emerald-200" },
   fta_connector_not_configured: { label: "STAGING COMPLETE", color: "bg-teal-50 text-teal-800 border border-teal-200" },
 };
+const INBOUND_STATUS: Record<string, { label: string; color: string }> = {
+  received: { label: "RECEIVED", color: "bg-blue-50 text-blue-800 border border-blue-200" },
+  rejected: { label: "RECEIVED · INVALID", color: "bg-rose-50 text-rose-800 border border-rose-200" },
+  complete: { label: "COMPLETE", color: "bg-emerald-50 text-emerald-800 border border-emerald-200" },
+};
 
 const COLOR_MAP: Record<string, string> = {
   blue: "bg-purple-100 text-[#7C01ED]",
@@ -180,6 +197,7 @@ export default function InvoiceDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [tdd, setTdd] = useState<TddInfo | null>(null);
   const [tddRetrying, setTddRetrying] = useState(false);
+  const [inbound, setInbound] = useState<InboundInfo | null>(null);
 
   const loadTdd = useCallback(async () => {
     try {
@@ -211,6 +229,12 @@ export default function InvoiceDetailPage() {
       setDoc(found);
       setHistory(histRes.history ?? []);
 
+      if (found?.direction === "inbound") {
+        try {
+          const ir = await fetch(`${BASE}/documents/${id}/inbound`, { credentials: "include" });
+          if (ir.ok) setInbound(await ir.json());
+        } catch { /* importer not deployed */ }
+      }
       if (found?.direction === "outbound") {
         try {
           const c3Res = await fetch(
@@ -351,10 +375,26 @@ export default function InvoiceDetailPage() {
   const tddRejected = tddSt === "rejected";
   if (doc.mls_status) completed.add("acknowledged");
 
+  // Received documents: AS4 reception, validation, role-02 TDD (AP), C5 MLS, MLS back to the sender
+  const isIn = doc.direction === "inbound";
+  const rr02 = tdd?.reports.find(r => r.reporter_role === "02") ?? null;
+  const inValid = isIn ? (inbound?.valid ?? !["rejected", "validation_failed"].includes(doc.status)) : true;
+  if (isIn) {
+    completed.add("received");
+    if (inValid) completed.add("validated");
+    if (rr02 || doc.tdd_generated) completed.add("tdd_generated");
+    if ((rr02 && ["awaiting_mls", "accepted", "rejected"].includes(rr02.status)) || doc.tdd_sent) completed.add("tdd_sent");
+    if (rr02?.status === "accepted") completed.add("fta_accepted");
+  }
+  const inCurrent = !isIn ? null : !inValid ? "validation_failed"
+    : rr02?.status === "rejected" ? "fta_rejected" : null;
+  const inOverall = !isIn ? null : !inValid ? INBOUND_STATUS.rejected
+    : rr02?.status === "accepted" && doc.mls_status ? INBOUND_STATUS.complete : INBOUND_STATUS.received;
+
   const hasC3 = doc.direction === "outbound" && c3?.c3_confirmed;
   if (hasC3) { completed.add("as4_receipt_received"); completed.add("delivered_to_c3"); completed.add("c4_response_not_expected"); }
 
-  const overallStatus = OVERALL_STATUS[current] ?? { label: current.toUpperCase(), color: "bg-gray-100 text-gray-700 border border-gray-200" };
+  const overallStatus = inOverall ?? OVERALL_STATUS[current] ?? { label: current.toUpperCase(), color: "bg-gray-100 text-gray-700 border border-gray-200" };
 
   let lastSection = "";
 
@@ -439,6 +479,34 @@ export default function InvoiceDetailPage() {
           ))}
           {(validation.warnings ?? []).map((w, i) => (
             <p key={`w${i}`} className="text-[11px] font-mono text-amber-700 bg-white/60 rounded px-2 py-1 mt-1 break-words">{w}</p>
+          ))}
+        </div>
+      )}
+
+      {isIn && (
+        <div className={`mb-4 rounded-xl border p-4 ${inValid ? "bg-blue-50/60 border-blue-200" : "bg-rose-50 border-rose-200"}`}>
+          <div className={`text-xs font-bold mb-2 ${inValid ? "text-blue-900" : "text-rose-800"}`}>
+            Received via Peppol (AS4) · {inValid
+              ? "PINT-AE 1.0.4 validation passed"
+              : `PINT-AE 1.0.4 validation failed - ${(inbound?.errors ?? []).length} error${(inbound?.errors ?? []).length === 1 ? "" : "s"}`}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-[11px]">
+            {([
+              ["From (sender)", inbound?.sender],
+              ["To (receiver)", inbound?.receiver],
+              ["AS4 message", inbound?.message_id],
+              ["SBDH id", inbound?.sbdh_id],
+              ["Received", inbound?.received_at ? new Date(inbound.received_at).toLocaleString() : doc.received_at ? new Date(doc.received_at).toLocaleString() : null],
+              ["MLS to supplier AP", doc.mls_status],
+            ] as [string, string | null | undefined][]).filter(([, v]) => v).map(([k, v]) => (
+              <div key={k} className="flex gap-2 min-w-0">
+                <span className="text-gray-500 shrink-0">{k}</span>
+                <span className="font-mono text-gray-800 truncate" title={v ?? ""}>{v}</span>
+              </div>
+            ))}
+          </div>
+          {(inbound?.errors ?? []).map((e, i) => (
+            <p key={i} className="text-[11px] font-mono text-rose-700 bg-white/60 rounded px-2 py-1 mt-1 break-words">{e}</p>
           ))}
         </div>
       )}
@@ -691,7 +759,8 @@ export default function InvoiceDetailPage() {
                   <div key={r.id} className="pt-2 border-t border-gray-100 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600 font-medium">
-                        TDD {r.reporter_role === "01" ? "(sender, role 01)" : `(role ${r.reporter_role})`}
+                        TDD {r.reporter_role === "01" ? "(sender, role 01)" : r.reporter_role === "02" ? "(receiver, role 02)" : `(role ${r.reporter_role})`}
+                        {r.tdt ? <span className="ml-1 font-mono text-gray-400">TDT {r.tdt}</span> : null}
                       </span>
                       <span className={`font-bold ${st.cls}`}>{st.label}</span>
                     </div>
@@ -718,7 +787,7 @@ export default function InvoiceDetailPage() {
                       </p>
                     )}
                     {r.tdd_errors && <p className="text-[11px] text-rose-700 break-words whitespace-pre-line">{r.tdd_errors}</p>}
-                    {r.next_attempt_at && TDD_RETRYABLE.has(r.status) && r.status !== "rejected" && (
+                    {r.next_attempt_at && TDD_RETRYABLE.has(r.status) && r.status !== "rejected" && r.retryable !== false && (
                       <p className="text-[11px] text-gray-400">Next attempt: {new Date(r.next_attempt_at).toLocaleString()}</p>
                     )}
                     {(r.attempts_log ?? []).length > 0 && (
@@ -734,7 +803,7 @@ export default function InvoiceDetailPage() {
                         </ul>
                       </details>
                     )}
-                    {TDD_RETRYABLE.has(r.status) && (
+                    {TDD_RETRYABLE.has(r.status) && r.retryable !== false && (
                       <button onClick={retryTdd} disabled={tddRetrying}
                         className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-2 border border-purple-300 text-purple-700 hover:bg-purple-50 rounded-lg text-xs font-bold disabled:opacity-50">
                         <RotateCcw size={12} className={tddRetrying ? "animate-spin" : ""} />
@@ -766,7 +835,7 @@ export default function InvoiceDetailPage() {
               )}
               {doc.mls_status && (
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                  <span className="text-gray-600 font-medium">Buyer MLS</span>
+                  <span className="text-gray-600 font-medium">{isIn ? "MLS to supplier AP" : "Buyer MLS"}</span>
                   <span className="text-emerald-700 font-mono font-bold">{doc.mls_status}</span>
                 </div>
               )}
@@ -797,7 +866,9 @@ export default function InvoiceDetailPage() {
               <div className="absolute left-3.5 top-4 bottom-4 w-px bg-gray-100" />
               <div className="space-y-0.5">
                 {pipeline.map((stage) => {
-                  if (FAILURE_KEYS.has(stage.key) && current !== stage.key && !(stage.key === "fta_rejected" && tddRejected)) return null;
+                  if (isIn && FAILURE_KEYS.has(stage.key) && inCurrent !== stage.key) return null;
+                  if (isIn && stage.key === "validated" && !inValid) return null;
+                  if (!isIn && FAILURE_KEYS.has(stage.key) && current !== stage.key && !(stage.key === "fta_rejected" && tddRejected)) return null;
                   if (stage.key === "c4_response_not_expected" && (completed.has("accepted_c4") || completed.has("rejected_c4"))) return null;
                   if ((stage.key === "accepted_c4" || stage.key === "awaiting_c4_response") && completed.has("c4_response_not_expected") && !completed.has("accepted_c4")) return null;
 
@@ -856,7 +927,25 @@ export default function InvoiceDetailPage() {
                           {stage.key === "fta_submitting" && rr01?.status === "awaiting_mls" && (
                             <p className="text-[10px] text-blue-700 mt-0.5">Delivered, waiting for C5 MLS</p>
                           )}
-                          {(stage.key === "fta_accepted" || stage.key === "fta_rejected") && rr01?.mls_code && (
+                          {isIn && stage.key === "received" && inbound?.message_id && (
+                            <p className="text-[10px] text-gray-500 font-mono mt-0.5 truncate" title={inbound.message_id}>
+                              {inbound.message_id}
+                            </p>
+                          )}
+                          {isIn && stage.key === "acknowledged" && (
+                            <p className="text-[10px] text-gray-500 mt-0.5">
+                              {doc.mls_status ? `MLS ${doc.mls_status} sent` : "Sent by the AP (not tracked for this participant)"}
+                            </p>
+                          )}
+                          {isIn && stage.key === "tdd_sent" && rr02?.status === "awaiting_mls" && (
+                            <p className="text-[10px] text-blue-700 mt-0.5">Delivered, waiting for C5 MLS</p>
+                          )}
+                          {isIn && (stage.key === "fta_accepted" || stage.key === "fta_rejected") && rr02?.mls_code && (
+                            <p className="text-[10px] text-gray-500 mt-0.5 font-mono truncate" title={rr02.mls_ref ?? ""}>
+                              MLS {rr02.mls_code}{rr02.mls_at ? ` · ${new Date(rr02.mls_at).toLocaleString()}` : ""}
+                            </p>
+                          )}
+                          {!isIn && (stage.key === "fta_accepted" || stage.key === "fta_rejected") && rr01?.mls_code && (
                             <p className="text-[10px] text-gray-500 mt-0.5 font-mono truncate" title={rr01.mls_ref ?? ""}>
                               MLS {rr01.mls_code}{rr01.mls_at ? ` · ${new Date(rr01.mls_at).toLocaleString()}` : ""}
                             </p>

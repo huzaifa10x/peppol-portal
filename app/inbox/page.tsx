@@ -35,7 +35,7 @@ export default function InboxPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [filters, setFilters] = useState({ direction: "", participant_type: "", doc_type: "" });
+  const [filters, setFilters] = useState({ direction: "inbound", participant_type: "", doc_type: "" });
   const [offset, setOffset] = useState(0);
   const LIMIT = 20;
 
@@ -125,7 +125,8 @@ export default function InboxPage() {
                 <td className="px-4 py-3 text-xs text-gray-500">{doc.issue_date ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${doc.status === "validated" ? "bg-blue-100 text-blue-700" :
-                    doc.status === "send_failed" ? "bg-red-100 text-red-700" :
+                    doc.status === "send_failed" || doc.status === "rejected" ? "bg-red-100 text-red-700" :
+                      doc.status === "received" ? "bg-sky-100 text-sky-700" :
                       doc.status === "sent" || doc.status === "acknowledged" ? "bg-green-100 text-green-700" :
                         "bg-gray-100 text-gray-600"
                     }`}>{doc.status}</span>
