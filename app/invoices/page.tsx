@@ -37,6 +37,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [docType, setDocType] = useState("");
   const [participant, setParticipant] = useState("");
+  const [direction, setDirection] = useState("");
 
   const load = useCallback(async () => {
     if (!tenantId) return;
@@ -44,10 +45,11 @@ export default function InvoicesPage() {
     const params = new URLSearchParams({ limit: "200", tenant_id: tenantId });
     if (docType) params.set("doc_type", docType);
     if (participant) params.set("participant_type", participant);
+    if (direction) params.set("direction", direction);
     const r = await fetch(`${BASE}/tenant/documents?${params}`, { credentials: "include" }).then(r => r.json());
     setDocs(r.documents ?? []);
     setLoading(false);
-  }, [tenantId, docType, participant]);
+  }, [tenantId, docType, participant, direction]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -89,6 +91,12 @@ export default function InvoicesPage() {
             placeholder="Search invoices..."
             className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
+        <select value={direction} onChange={e => setDirection(e.target.value)}
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Inbound &amp; Outbound</option>
+          <option value="inbound">Inbound (received)</option>
+          <option value="outbound">Outbound (sent)</option>
+        </select>
         <select value={docType} onChange={e => setDocType(e.target.value)}
           className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">All Types</option>
