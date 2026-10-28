@@ -8,6 +8,7 @@ import {
   Package, ChevronDown, ChevronUp, LucideProps,
 } from "lucide-react";
 import { formatTimeOnly } from "@/lib/utils";
+import TaxpayerTdd from "@/components/TaxpayerTdd";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.kasaadvisory.com";
 
@@ -735,6 +736,9 @@ export default function InvoiceDetailPage() {
             </div>
           )}
 
+          {/* Taxpayer-requested TDD (C1 -> C2 -> C5, S/R/W) */}
+          <TaxpayerTdd documentId={doc.id} invoiceNumber={doc.invoice_number} direction={doc.direction} />
+
           {/* Tax reporting */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
@@ -974,8 +978,8 @@ export default function InvoiceDetailPage() {
                 <span className="font-semibold text-gray-600">5-Corner Model:</span>{" "}
                 C1 Seller · C2 KASA AP · C3 Buyer AP · C4 Buyer ERP · C5 FTA
               </p>
-              <div className="flex gap-3 mt-2">
-                {[["Track A", "Peppol Network"], ["Track B", "FTA Reporting"]].map(([t, d]) => (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                {[["Track A", "Peppol Network"], ["Track B", "FTA Reporting"], ["Taxpayer TDD", "C1 → C2 → C5 (S / R / W)"]].map(([t, d]) => (
                   <div key={t} className="text-[10px]">
                     <span className="font-semibold text-[#7C01ED]">{t}</span>
                     <span className="text-gray-400"> — {d}</span>
