@@ -1,7 +1,7 @@
 "use client";
 // Taxpayer-requested TDD (AE TDD 1.0.4): the supplier (C1, role 01) or the buyer (C4, role 02)
 // asks KASA to submit, revise (R) or withdraw (W) its tax report. C1/C4 never talk to C5: the KASA
-// access point (C2/C3, accredited, SPIS 0242:001045) sends the TDD to the FTA C5 over Peppol AS4 and
+// access point (C2/C3, accredited; ReportersRepresentative 0242:001045) sends the TDD to the FTA C5 over Peppol AS4 and
 // C5 answers the access point.
 // Backend: POST /tdd, GET /tdd?invoice_id=, GET /tdd/{id}
 import { useCallback, useEffect, useState } from "react";
