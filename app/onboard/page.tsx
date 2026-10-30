@@ -5,6 +5,7 @@ import {
   Shield, CheckCircle, AlertCircle, Building2,
   Mail, Phone, Hash, Loader2,
 } from "lucide-react";
+import PeppolRegistryCard, { type PeppolInfo } from "@/components/PeppolRegistryCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ interface EntityData {
   legalType: string;
   verificationStatus: string;
   msgDesc: string;
+  peppol?: PeppolInfo;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,6 +68,7 @@ function OnboardInner() {
 
   // Result state
   const [entityData, setEntityData] = useState<EntityData | null>(null);
+  const [peppol, setPeppol] = useState<PeppolInfo | null>(null);
   const [declared, setDeclared] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -160,6 +163,7 @@ function OnboardInner() {
       if (!res.ok) {
         setError(data.detail || data.error || "Registration failed. Please try again.");
       } else {
+        setPeppol(data.peppol || null);
         setStage("success");
       }
     } catch {
@@ -184,7 +188,7 @@ function OnboardInner() {
     }[action];
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
           <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={28} className="text-green-600" />
           </div>
@@ -193,8 +197,11 @@ function OnboardInner() {
               : action === 2 ? "Reverified Successfully"
                 : "Onboarded Successfully"}
           </h2>
-          <p className="text-sm text-gray-500 mb-6">{msg}</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-sm text-gray-500 mb-2">{msg}</p>
+          <PeppolRegistryCard peppol={peppol}
+            title={action === 3 ? "Peppol Network Registration (after offboarding)"
+              : "Peppol Network Registration"} />
+          <p className="text-xs text-gray-400 mt-6">
             You may now close this window and return to EmaraTax.
           </p>
         </div>
@@ -262,6 +269,15 @@ function OnboardInner() {
               </span>
             </label>
 
+            <PeppolRegistryCard peppol={entityData?.peppol}
+              title="Peppol Network Status (before submission)" />
+            {action === 1 && entityData?.peppol?.state === "other_provider" && (
+              <p className="text-xs text-amber-800">
+                This TIN is already registered on the Peppol network by another
+                service provider. It must be migrated before KASA can register it.
+              </p>
+            )}
+
             {error && (
               <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
@@ -278,7 +294,8 @@ function OnboardInner() {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!declared || loading}
+                disabled={!declared || loading
+                  || (action === 1 && entityData?.peppol?.state === "other_provider")}
                 className={`flex-1 py-2.5 text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${actionBtnCls}`}
               >
                 {loading

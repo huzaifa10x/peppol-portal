@@ -21,6 +21,7 @@ import {
   Shield, CheckCircle, AlertCircle, AlertTriangle, Building2,
   Mail, Phone, Hash, Loader2, RefreshCw, Clock,
 } from "lucide-react";
+import PeppolRegistryCard, { type PeppolInfo } from "@/components/PeppolRegistryCard";
 
 type Stage = "loading" | "form" | "details" | "pending" | "success" | "dead"; // NEW: pending
 type Action = 1 | 2 | 3;
@@ -30,6 +31,7 @@ interface EntityData {
   entityNameEn: string; entityNameAr: string; vatTrn: string;
   effectiveDate: string; legalType: string;
   verificationStatus: string; msgDesc: string;
+  peppol?: PeppolInfo;
 }
 
 interface SessionCtx {
@@ -113,6 +115,7 @@ export default function RegisterClient() {
   const [err, setErr] = useState<ApiError | null>(null);
   const [deadMsg, setDeadMsg] = useState("");
   const [pending, setPending] = useState<PendingInfo | null>(null); // NEW
+  const [peppol, setPeppol] = useState<PeppolInfo | null>(null);
 
   // ---- load journey context from the cookie ------------------------------
   useEffect(() => {
@@ -222,6 +225,7 @@ export default function RegisterClient() {
         }
         setErr(data);
       } else {
+        setPeppol(data.peppol || null);
         setStage("success");
       }
     } catch {
@@ -331,8 +335,11 @@ export default function RegisterClient() {
             {action === 3 ? "Delinked Successfully"
               : action === 2 ? "Reverified Successfully" : "Onboarded Successfully"}
           </h2>
-          <p className="text-sm text-gray-500 mb-6">{msg}</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-sm text-gray-500 mb-2">{msg}</p>
+          <PeppolRegistryCard peppol={peppol}
+            title={action === 3 ? "Peppol Network Registration (after delinking)"
+              : "Peppol Network Registration"} />
+          <p className="text-xs text-gray-400 mt-6">
             You may now close this window and return to EmaraTax.
           </p>
         </div>
@@ -380,6 +387,15 @@ export default function RegisterClient() {
             </span>
           </label>
 
+          <PeppolRegistryCard peppol={entityData.peppol}
+            title="Peppol Network Status (before submission)" />
+          {isOnboarding && entityData.peppol?.state === "other_provider" && (
+            <p className="text-xs text-amber-800">
+              This TIN is already registered on the Peppol network by another
+              service provider. It must be migrated before KASA can register it.
+            </p>
+          )}
+
           {err && <ErrorBanner err={err} onRetry={() => doSubmit()} />}
 
           <div className="flex gap-3 pt-1">
@@ -387,7 +403,9 @@ export default function RegisterClient() {
               className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50">
               Back
             </button>
-            <button onClick={doSubmit} disabled={!declared || loading}
+            <button onClick={doSubmit}
+              disabled={!declared || loading
+                || (isOnboarding && entityData.peppol?.state === "other_provider")}
               className={`flex-1 py-2.5 text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${btnCls}`}>
               {loading ? <><Loader2 size={16} className="animate-spin" /> Processing…</>
                 : `Submit & ${actionLabel}`}
