@@ -28,7 +28,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-left">
               <p className="font-semibold text-gray-800">KASA Advisory Service FZE</p>
-              <p className="text-gray-500">License No: 16428 · UAE Address: Dubai Silicon Oasis, UAE</p>
+              <p className="text-gray-500">ASP No.: 153288</p>
             </div>
             <div className="flex gap-4 text-gray-600">
               <Link href="/privacy" className="hover:text-[#7C01ED] transition-colors">
@@ -40,7 +40,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
               </Link>
             </div>
             <div className="text-right text-gray-500">
-              <p>Email: <a href="mailto:info@kasaadvisory.com" className="hover:underline text-gray-700">info@kasaadvisory.com</a></p>
+              <p>Email: <a href="mailto:insight@kasaadvisory.com" className="hover:underline text-gray-700">insight@kasaadvisory.com</a></p>
               <p>© 2026 KASA Advisory Service FZE. All rights reserved.</p>
             </div>
           </div>
